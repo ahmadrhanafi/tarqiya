@@ -50,7 +50,7 @@ abstract class BaseController extends Controller
 
         // 1. DAFTARKAN KECUALIAN (Whitelist)
         // Jika sedang mengakses halaman login, proses login, logout, atau loading, lewati pengecekan!
-        $allowedRoutes = ['login', 'auth', 'logout', 'loading'];
+        $allowedRoutes = ['', 'home', 'login', 'auth', 'logout', 'loading'];
         if (in_array($segment, $allowedRoutes)) {
             return; // Keluar dari initController, biarkan halaman publik diakses bebas
         }

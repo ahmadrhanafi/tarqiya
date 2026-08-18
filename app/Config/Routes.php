@@ -3,8 +3,8 @@
 use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
-// $routes->get('/', 'Home::index');
-$routes->get('/', 'Auth::login');
+$routes->get('/', 'Home::index');
+// $routes->get('/', 'Auth::login');
 
 $routes->get('login', 'Auth::login');
 $routes->post('auth/process', 'Auth::process');
