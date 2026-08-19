@@ -10,6 +10,7 @@ class Wali extends BaseController
 {
     protected $waliModel;
     protected $userModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -20,6 +21,9 @@ class Wali extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session yang sedang aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
@@ -27,7 +31,8 @@ class Wali extends BaseController
         $perPage = 8;
         $currentPage = $this->request->getVar('page_wali') ? (int) $this->request->getVar('page_wali') : 1;
 
-        $allWali = $this->waliModel->getWaliWithSantri();
+        // Pastikan method di WaliModel memfilter data berdasarkan tenant_id
+        $allWali = $this->waliModel->getWaliWithSantriByTenant($this->tenantId);
         $total = count($allWali);
 
         $waliPaging = array_slice($allWali, ($currentPage - 1) * $perPage, $perPage);
@@ -66,10 +71,16 @@ class Wali extends BaseController
         $namaFoto = null;
         if ($fileFoto && $fileFoto->isValid() && !$fileFoto->hasMoved()) {
             $namaFoto = $fileFoto->getRandomName();
-            $fileFoto->move('uploads/profile', $namaFoto);
+            $folderTujuan = 'uploads/profile/';
+            if (!is_dir($folderTujuan)) {
+                mkdir($folderTujuan, 0777, true);
+            }
+            $fileFoto->move($folderTujuan, $namaFoto);
         }
 
+        // Simpan data wali dengan menyertakan tenant_id
         $this->waliModel->save([
+            'tenant_id' => $this->tenantId,
             'nama_wali' => $namaWali,
             'no_hp' => $noHp,
             'alamat' => $this->request->getVar('alamat'),
@@ -77,7 +88,9 @@ class Wali extends BaseController
 
         $waliId = $this->waliModel->insertID();
 
+        // Simpan data akun user dengan menyertakan tenant_id
         $this->userModel->save([
+            'tenant_id' => $this->tenantId,
             'name' => $namaWali,
             'username' => $noHp,
             'password' => password_hash($noHp, PASSWORD_DEFAULT),
@@ -91,6 +104,12 @@ class Wali extends BaseController
 
     public function update($id)
     {
+        // Pastikan data wali yang akan diupdate benar-benar milik tenant aktif
+        $waliLama = $this->waliModel->where('id', $id)->where('tenant_id', $this->tenantId)->first();
+        if (!$waliLama) {
+            return redirect()->to(base_url('admin/wali-santri'))->with('error', 'Data wali santri tidak ditemukan.');
+        }
+
         if (
             !$this->validate([
                 'nama_wali' => 'required|min_length[3]',
@@ -111,7 +130,11 @@ class Wali extends BaseController
             'alamat' => $this->request->getVar('alamat'),
         ]);
 
-        $user = $this->userModel->where('ref_id', $id)->where('role', 'wali')->first();
+        $user = $this->userModel->where('ref_id', $id)
+            ->where('role', 'wali')
+            ->where('tenant_id', $this->tenantId)
+            ->first();
+
         if ($user) {
             $dataUpdateUser = [
                 'name' => $namaWali,
@@ -138,7 +161,17 @@ class Wali extends BaseController
 
     public function delete($id)
     {
-        $user = $this->userModel->where('ref_id', $id)->where('role', 'wali')->first();
+        // Pastikan data wali milik tenant aktif sebelum dihapus
+        $wali = $this->waliModel->where('id', $id)->where('tenant_id', $this->tenantId)->first();
+        if (!$wali) {
+            return redirect()->to(base_url('admin/wali-santri'))->with('error', 'Data wali santri tidak ditemukan.');
+        }
+
+        $user = $this->userModel->where('ref_id', $id)
+            ->where('role', 'wali')
+            ->where('tenant_id', $this->tenantId)
+            ->first();
+
         if ($user) {
             if (!empty($user['foto']) && file_exists('uploads/profile/' . $user['foto'])) {
                 unlink('uploads/profile/' . $user['foto']);

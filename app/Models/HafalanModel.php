@@ -370,6 +370,189 @@ class HafalanModel extends Model
         ];
     }
 
+    // ==========================================
+    // TAMBAHAN METHOD MULTI-TENANT
+    // ==========================================
+
+    // Fungsi untuk mengambil data hafalan lengkap dengan relasi dan difilter berdasarkan tenant_id
+    public function getHafalanWithRelationsByTenant($tenantId, $id = null)
+    {
+        $this->select('hafalan.*, santri.nama_santri, santri.foto AS foto_santri, guru.nama_guru, kelas.nama_kelas AS nama_kelas')
+            ->join('santri', 'santri.id = hafalan.id_santri', 'left')
+            ->join('guru', 'guru.id = hafalan.id_guru', 'left')
+            ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
+            ->where('hafalan.tenant_id', $tenantId);
+
+        if ($id) {
+            return $this->where('hafalan.id', $id)->first();
+        }
+
+        return $this->orderBy('hafalan.created_at', 'DESC');
+    }
+
+    /**
+     * Mengambil data grafik setoran hafalan berdasarkan tenant_id dan periode
+     */
+    public function getGrafikSetoranByTenant($tenantId, $periode = 'bulan_ini')
+    {
+        $builder = $this->where('tenant_id', $tenantId);
+
+        if ($periode === 'bulan_ini') {
+            $builder->where('MONTH(created_at)', date('m'))
+                ->where('YEAR(created_at)', date('Y'));
+        } elseif ($periode === 'tahun_ini') {
+            $builder->where('YEAR(created_at)', date('Y'));
+        }
+
+        // Ambil data hasil group
+        $results = $builder->select('created_at, COUNT(*) as total')
+            ->groupBy('created_at')
+            ->orderBy('created_at', 'ASC')
+            ->findAll();
+
+        $labels = [];
+        $values = [];
+
+        foreach ($results as $row) {
+            $labels[] = $row['created_at'];
+            $values[] = (int) $row['total'];
+        }
+
+        return [
+            'labels' => $labels,
+            'values' => $values
+        ];
+    }
+
+    /**
+     * Menghitung rata-rata jumlah ayat per setoran berdasarkan tenant_id
+     */
+    public function getRataRataByTenant($tenantId, $periode = 'tahun_ini')
+    {
+        $builder = $this->where('tenant_id', $tenantId);
+
+        // Anda bisa menyematkan filter periode jika diperlukan, 
+        $this->applyPeriodeFilter($builder, $periode);
+
+        $rows = $builder->select('ayat_mulai, ayat_selesai')->findAll();
+
+        $totalAyat = 0;
+        $totalSetoran = count($rows);
+
+        foreach ($rows as $row) {
+            $mulai = (int) ($row['ayat_mulai'] ?? 0);
+            $selesai = (int) ($row['ayat_selesai'] ?? 0);
+            if ($selesai >= $mulai) {
+                $totalAyat += ($selesai - $mulai + 1);
+            }
+        }
+
+        // Menghitung rata-rata ayat per setoran dengan pembagian aman
+        return ($totalSetoran > 0) ? (int) round($totalAyat / $totalSetoran) : 0;
+    }
+
+    /**
+     * Mencari Juz yang paling dominan/sering disetorkan berdasarkan tenant_id
+     */
+    public function getJuzDominanByTenant($tenantId, $periode = 'tahun_ini')
+    {
+        $builder = $this->where('tenant_id', $tenantId);
+
+        // Terapkan filter periode jika method applyPeriodeFilter tersedia di model Anda
+        if (method_exists($this, 'applyPeriodeFilter')) {
+            $this->applyPeriodeFilter($builder, $periode);
+        }
+
+        // Mengambil data juz yang paling sering muncul
+        $result = $builder->select('juz, COUNT(id) as total_setoran')
+            ->groupBy('juz')
+            ->orderBy('total_setoran', 'DESC')
+            ->first();
+
+        // Mengembalikan nomor juz yang dominan, atau '-' jika belum ada data
+        return $result['juz'] ?? '-';
+    }
+
+    /**
+     * Mencari predikat penilaian yang paling sering/banyak muncul berdasarkan tenant_id
+     */
+    public function getPredikatTerbanyakByTenant($tenantId, $periode = 'tahun_ini')
+    {
+        $builder = $this->where('tenant_id', $tenantId);
+
+        // Terapkan filter periode jika method applyPeriodeFilter tersedia di model Anda
+        if (method_exists($this, 'applyPeriodeFilter')) {
+            $this->applyPeriodeFilter($builder, $periode);
+        }
+
+        // Mengambil predikat yang paling sering muncul
+        $result = $builder->select('predikat, COUNT(id) as total_muncul')
+            ->groupBy('predikat')
+            ->orderBy('total_muncul', 'DESC')
+            ->first();
+
+        // Mengembalikan nama predikat terbanyak, atau '-' jika belum ada data
+        return $result['predikat'] ?? '-';
+    }
+
+    /**
+     * Menghitung progres persentase hafalan per juz berdasarkan tenant_id
+     */
+    public function getProgressJuzByTenant($tenantId, $periode = 'tahun_ini')
+    {
+        // 1. Hitung grand total seluruh ayat untuk tenant tersebut pada periode ini
+        $builderTotal = $this->where('tenant_id', $tenantId);
+        if (method_exists($this, 'applyPeriodeFilter')) {
+            $this->applyPeriodeFilter($builderTotal, $periode);
+        }
+        $allRows = $builderTotal->select('ayat_mulai, ayat_selesai')->findAll();
+
+        $grandTotalAyat = 0;
+        foreach ($allRows as $row) {
+            $mulai = (int) ($row['ayat_mulai'] ?? 0);
+            $selesai = (int) ($row['ayat_selesai'] ?? 0);
+            if ($selesai >= $mulai) {
+                $grandTotalAyat += ($selesai - $mulai + 1);
+            }
+        }
+
+        // 2. Ambil akumulasi per juz
+        $builderJuz = $this->where('tenant_id', $tenantId);
+        if (method_exists($this, 'applyPeriodeFilter')) {
+            $this->applyPeriodeFilter($builderJuz, $periode);
+        }
+        $juzRows = $builderJuz->select('juz, ayat_mulai, ayat_selesai')->findAll();
+
+        $rekapJuz = [];
+        foreach ($juzRows as $row) {
+            $juz = $row['juz'] ?? 'Lainnya';
+            $mulai = (int) ($row['ayat_mulai'] ?? 0);
+            $selesai = (int) ($row['ayat_selesai'] ?? 0);
+
+            if ($selesai >= $mulai) {
+                $jumlahAyat = ($selesai - $mulai + 1);
+                if (!isset($rekapJuz[$juz])) {
+                    $rekapJuz[$juz] = 0;
+                }
+                $rekapJuz[$juz] += $jumlahAyat;
+            }
+        }
+
+        // 3. Format hasil menjadi persentase per juz
+        $result = [];
+        for ($i = 1; $i <= 30; $i++) {
+            $jumlahAyat = $rekapJuz[$i] ?? 0;
+            $persen = ($grandTotalAyat > 0) ? round(($jumlahAyat / $grandTotalAyat) * 100) : 0;
+
+            $result[$i] = [
+                'juz' => $i,
+                'total_ayat' => $jumlahAyat,
+                'persentase' => $persen
+            ];
+        }
+
+        return $result;
+    }
 
     // ==========================================
     // GLOBAL DI DASHBOARD ADMIN    

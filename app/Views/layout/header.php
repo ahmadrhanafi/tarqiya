@@ -26,7 +26,7 @@
     <style>
         :root {
             --sidebar-bg: #002127;
-            --main-bg: #f4f7f6;
+            --main-bg: #f4f7f7f8;
             --emerald-green: #50C878;
             --dark-emerald: #097969;
             --teal-secondary: #008080;
@@ -67,7 +67,7 @@
 
         /* Warna saat Dark Mode aktif */
         body.dark-mode {
-            background-color: #121212 !important;
+            background-color: #000200 !important;
             color: #e0e0e0 !important;
         }
 
@@ -76,7 +76,7 @@
         }
 
         body.dark-mode .navbar {
-            background-color: #1e1e1e !important;
+            background-color: #080808 !important;
             border-color: #2c2c2c !important;
         }
 
@@ -85,7 +85,7 @@
         }
 
         body.dark-mode .dropdown-menu {
-            background-color: #1e1e1e !important;
+            background-color: #1b1b1b !important;
             border: 1px solid #2c2c2c !important;
         }
 
@@ -159,7 +159,7 @@
 
         /* Sinkronisasi saat Dark Mode Global Aktif */
         body.dark-mode #mainSidebar {
-            background-color: #1a1a1a !important;
+            background-color: #080808 !important;
             border-right: 1px solid #2c2c2c;
         }
 
@@ -220,9 +220,8 @@
 
         /* --- Navbar Atas (Header) --- */
         .navbar-main {
-            background: #ffffff !important;
+            background: var(--teal-secondary) !important;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-            height: 70px;
             padding: 0 24px;
             width: 100% !important;
             max-width: 100% !important;
@@ -254,14 +253,14 @@
         body.dark-mode .card,
         body.dark-mode .table-responsive,
         body.dark-mode table.table {
-            background-color: #1a1a1a !important;
+            background-color: #080808 !important;
             color: #e0e0e0 !important;
             border-color: #2c2c2c !important;
         }
 
         /* Warna latar belakang baris tabel saat dark mode */
         body.dark-mode .table {
-            --bs-table-bg: #1a1a1a;
+            --bs-table-bg: #080808;
             --bs-table-color: #e0e0e0;
             --bs-table-border-color: #2c2c2c;
             color: #e0e0e0 !important;
@@ -277,7 +276,7 @@
         /* Sel / baris tabel saat dark mode */
         body.dark-mode .table td,
         body.dark-mode .table th {
-            background-color: #1a1a1a !important;
+            background-color: #080808 !important;
             color: #d1d5db !important;
             border-color: #2c2c2c !important;
         }
@@ -297,7 +296,7 @@
 
         /* Sinkronisasi Footer dengan Dark Mode Global */
         body.dark-mode .footer-dashboard {
-            background-color: #1a1a1a !important;
+            background-color: #080808 !important;
             border-color: #2c2c2c !important;
         }
 

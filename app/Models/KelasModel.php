@@ -18,4 +18,12 @@ class KelasModel extends Model
     protected $dateFormat = 'datetime';
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
+
+    /**
+     * Mengambil daftar kelas berdasarkan tenant_id aktif
+     */
+    public function getKelasByTenant($tenantId)
+    {
+        return $this->where('tenant_id', $tenantId)->findAll();
+    }
 }

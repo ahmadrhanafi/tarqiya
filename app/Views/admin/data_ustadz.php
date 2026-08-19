@@ -134,8 +134,8 @@ $kelas = $kelas ?? [];
                                     <td class="ps-4 fw-medium text-muted"><?= $no++; ?></td>
                                     <td>
                                         <div class="d-flex align-items-center gap-3">
-                                            <?php if (!empty($g['foto']) && file_exists('uploads/profile/' . $g['foto'])): ?>
-                                                <img src="<?= base_url('uploads/profile/' . $g['foto']); ?>"
+                                            <?php if (!empty($g['foto_user']) && file_exists('uploads/profile/' . $g['foto_user'])): ?>
+                                                <img src="<?= base_url('uploads/profile/' . $g['foto_user']); ?>"
                                                     alt="Foto <?= esc($g['nama_guru']); ?>"
                                                     class="rounded-circle object-fit-cover shadow-sm"
                                                     style="width: 38px; height: 38px;">
@@ -200,7 +200,8 @@ $kelas = $kelas ?? [];
                                                 data-id="<?= $g['id']; ?>" data-nip="<?= esc($g['nip']); ?>"
                                                 data-namaguru="<?= esc($g['nama_guru']); ?>"
                                                 data-jeniskelamin="<?= esc($g['jenis_kelamin']); ?>"
-                                                data-nohp="<?= esc($g['no_hp'] ?? ''); ?>" data-foto="<?= $g['foto']; ?>"
+                                                data-nohp="<?= esc($g['no_hp'] ?? ''); ?>"
+                                                data-foto="<?= $g['foto_user'] ?? ''; ?>"
                                                 data-idkelas="<?= esc($g['id_kelas_diampu']); ?>"
                                                 data-status="<?= $g['status_aktif']; ?>">
                                                 <i class="fa-solid fa-eye"></i>

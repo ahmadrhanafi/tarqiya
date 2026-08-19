@@ -1,5 +1,5 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 py-2 border-bottom sticky-top transition-base"
-    id="mainNavbar">
+<nav class="navbar navbar-expand-lg navbar-light shadow-sm px-4 py-2 border-bottom sticky-top transition-base"
+    id="mainNavbar" style="background-color: #097969;">
     <?php
     $role = session()->get('role');
     $dashboardUrl = base_url($role . '/dashboard');
@@ -13,8 +13,8 @@
             </button>
 
             <div class="d-none d-md-flex align-items-center gap-2">
-                <div class="bg-success text-white p-2 rounded-3 d-flex align-items-center justify-content-center"
-                    style="width: 30px; height: 30px; font-size: 16px;">
+                <div class="text-dark-mode p-2 rounded-3 d-flex align-items-center justify-content-center"
+                    style="width: 30px; height: 30px; font-size: 16px; background-color: #50C878;">
                     <i class="<?= $icon ?? 'fa-solid fa-gauge-high' ?>"></i>
                 </div>
                 <h5 class="m-0 fw-bold text-dark-mode" style="font-size: 16px;"><?= $title ?? 'Dashboard' ?></h5>
@@ -50,9 +50,9 @@
                                 <?php
                                 $roleLabel = session()->get('role');
                                 if ($roleLabel === 'superadmin')
-                                    echo 'Super Admin Pusat';
+                                    echo 'Super Admin';
                                 elseif ($roleLabel === 'admin')
-                                    echo 'Admin Pesantren';
+                                    echo 'Admin';
                                 elseif ($roleLabel === 'wali')
                                     echo 'Wali Santri';
                                 else
@@ -73,7 +73,7 @@
                         }
                         ?>
                         <img src="<?= $urlFoto; ?>" alt="User" width="38" height="38"
-                            class="rounded-circle border border-2 border-white shadow-sm object-fit-cover">
+                            class="rounded-circle  shadow-sm object-fit-cover">
                     </div>
                 </a>
 

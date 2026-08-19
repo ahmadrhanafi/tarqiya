@@ -10,6 +10,7 @@ class TenantModel extends Model
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
     protected $returnType = 'array';
+    protected $useSoftDeletes = false;
 
     // Kolom yang diizinkan untuk diisi/diubah
     protected $allowedFields = [
@@ -27,4 +28,17 @@ class TenantModel extends Model
     protected $dateFormat = 'datetime';
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
+
+    /**
+     * Mengambil data tenant berdasarkan slug atau domain custom untuk keperluan routing/identifikasi
+     */
+    public function getTenantByIdentifier($identifier)
+    {
+        return $this->groupStart()
+            ->where('slug', $identifier)
+            ->orWhere('domain_custom', $identifier)
+            ->groupEnd()
+            ->where('status_tenant', 'Aktif')
+            ->first();
+    }
 }

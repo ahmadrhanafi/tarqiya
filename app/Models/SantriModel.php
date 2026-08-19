@@ -12,7 +12,7 @@ class SantriModel extends Model
     protected $returnType = 'array';
     protected $useSoftDeletes = false;
 
-    // Tambahkan field baru di sini agar bisa di-insert/update
+    // Field yang diizinkan untuk di-insert/update
     protected $allowedFields = [
         'tenant_id',
         'foto',
@@ -32,12 +32,15 @@ class SantriModel extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
 
-    // Fungsi untuk mengambil data santri beserta relasi
-    public function getSantriWithRelations($id = null)
+    /**
+     * Fungsi untuk mengambil data santri beserta relasi berdasarkan tenant_id
+     */
+    public function getSantriWithRelationsByTenant($tenantId, $id = null)
     {
         $builder = $this->select('santri.*, kelas.nama_kelas, wali.nama_wali, wali.no_hp as no_hp_wali, wali.alamat AS alamat_wali')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->join('wali', 'wali.id = santri.id_wali', 'left');
+            ->join('wali', 'wali.id = santri.id_wali', 'left')
+            ->where('santri.tenant_id', $tenantId);
 
         if ($id === null) {
             return $builder->findAll();
@@ -46,11 +49,15 @@ class SantriModel extends Model
         return $builder->where('santri.id', $id)->first();
     }
 
-    public function searchSantri($keyword = null, $idKelas = null, $status = null)
+    /**
+     * Fungsi pencarian data santri dengan batasan tenant_id
+     */
+    public function searchSantriByTenant($tenantId, $keyword = null, $idKelas = null, $status = null)
     {
         $builder = $this->select('santri.*, kelas.nama_kelas, wali.nama_wali, wali.no_hp as no_hp_wali, wali.alamat as alamat_wali')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->join('wali', 'wali.id = santri.id_wali', 'left');
+            ->join('wali', 'wali.id = santri.id_wali', 'left')
+            ->where('santri.tenant_id', $tenantId);
 
         if (!empty($idKelas)) {
             $builder->where('santri.id_kelas', $idKelas);
@@ -76,10 +83,14 @@ class SantriModel extends Model
         return $builder->findAll();
     }
 
-    public function getSantriByKelas($idKelas)
+    /**
+     * Fungsi mengambil data santri berdasarkan kelas dan tenant_id
+     */
+    public function getSantriByKelasByTenant($tenantId, $idKelas)
     {
         return $this->select('santri.*, kelas.nama_kelas')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'inner')
+            ->where('santri.tenant_id', $tenantId)
             ->where('santri.id_kelas', $idKelas)
             ->findAll();
     }

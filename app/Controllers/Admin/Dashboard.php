@@ -12,7 +12,7 @@ class Dashboard extends BaseController
     protected $guruModel;
     protected $santriModel;
     protected $hafalanModel;
-    protected $pembayaranModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -24,22 +24,26 @@ class Dashboard extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session yang sedang aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
         $periode = $this->request->getGet('periode') ?? 'bulan_ini';
 
-        $grafikData = $this->hafalanModel->getGrafikSetoranGlobal($periode);
+        // Pastikan method grafik di model mendukung filter tenant_id (misal: getGrafikSetoranByTenant)
+        $grafikData = $this->hafalanModel->getGrafikSetoranByTenant($this->tenantId, $periode);
 
         $data = [
             'title' => 'Dashboard Admin',
             'icon' => 'fa-solid fa-gauge',
             'periode' => $periode,
-            'total_ustadz' => $this->guruModel->where('status_aktif', 'Aktif')->countAllResults(),
-            'total_santri' => $this->santriModel->countAll(),
-            'total_setoran' => $this->hafalanModel->countAll(),
-            'total_khatam' => $this->santriModel->where('status_aktif', 'lulus')->countAllResults(),
+            'total_ustadz' => $this->guruModel->where('tenant_id', $this->tenantId)->where('status_aktif', 'Aktif')->countAllResults(),
+            'total_santri' => $this->santriModel->where('tenant_id', $this->tenantId)->countAllResults(),
+            'total_setoran' => $this->hafalanModel->where('tenant_id', $this->tenantId)->countAllResults(),
+            'total_khatam' => $this->santriModel->where('tenant_id', $this->tenantId)->where('status_aktif', 'lulus')->countAllResults(),
             'grafik_data' => $grafikData,
         ];
 

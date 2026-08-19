@@ -10,7 +10,7 @@
     <style>
         body {
             margin: 0;
-            background: #D9E9CF;
+            background: rgba(0, 128, 128, 0.38);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -42,7 +42,7 @@
 </head>
 
 <body>
-    <img src="<?= base_url('logo_hudfal.png') ?>" class="logo-load" alt="Logo">
+    <img src="<?= base_url('assets/img/mainicon.png') ?>" class="logo-load" alt="Logo Tarqiya">
 
     <script>
         const userRole = "<?= session()->get('role') ?>";

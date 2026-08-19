@@ -8,6 +8,7 @@ use App\Models\SantriModel;
 class Esertifikat extends BaseController
 {
     protected $santriModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -17,12 +18,15 @@ class Esertifikat extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session yang sedang aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
-        // Ambil data santri beserta kelas dan walinya dari fungsi yang sudah ada
-        $data['sertifikat'] = $this->santriModel->getSantriWithRelations();
+        // Pastikan method di SantriModel mendukung filter tenant_id (misal: getSantriWithRelationsByTenant)
+        $data['sertifikat'] = $this->santriModel->getSantriWithRelationsByTenant($this->tenantId);
 
         return view('admin/esertifikat', $data);
     }

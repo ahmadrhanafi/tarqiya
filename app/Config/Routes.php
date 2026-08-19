@@ -4,14 +4,11 @@ use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
 $routes->get('/', 'Home::index');
-// $routes->get('/', 'Auth::login');
 
 $routes->get('login', 'Auth::login');
 $routes->post('auth/process', 'Auth::process');
 $routes->get('loading', 'Auth::loading');
 $routes->get('logout', 'Auth::logout');
-
-$routes->get('kelas', 'KelasController::index');
 
 $routes->get('dashboard', 'Dashboard::index', ['filter' => 'auth']);
 
@@ -29,20 +26,22 @@ $routes->group('superadmin', ['filter' => 'auth'], function ($routes) {
     $routes->post('packages/update/(:num)', 'SuperAdmin\Package::update/$1');
 
     $routes->get('settings', 'SuperAdmin\Settings::index');
+    $routes->get('subscriptions', 'SuperAdmin\Subscriptions::index');
+    $routes->get('profile', 'SuperAdmin\Profile::index');
 });
 
-// Grouping agar akses lebih aman
+// Grouping Admin Lembaga
 $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->get('dashboard', 'Admin\Dashboard::index');
+
     // Manajemen Kelas
     $routes->get('kelas', 'Admin\Kelas::index');
     $routes->post('kelas/store', 'Admin\Kelas::store');
     $routes->post('kelas/update/(:num)', 'Admin\Kelas::update/$1');
     $routes->get('kelas/delete/(:num)', 'Admin\Kelas::delete/$1');
 
-    //  Manajemen Santri
+    // Manajemen Santri
     $routes->get('santri', 'Admin\Santri::index');
-    // $routes->get('santri/tambah', 'Admin\Santri::tambah');
     $routes->post('santri/store', 'Admin\Santri::store');
     $routes->get('santri-detail/(:num)', 'Admin\Santri::detail/$1');
     $routes->get('santri/cetakKartu/(:num)', 'Admin\Santri::cetakKartu/$1');
@@ -97,6 +96,7 @@ $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->get('pengaturan/backup', 'Admin\Pengaturan::backupDatabase');
 });
 
+// Grouping Guru
 $routes->group('guru', ['filter' => 'auth'], function ($routes) {
     $routes->get('dashboard', 'Guru\Dashboard::index');
     $routes->get('santri', 'Guru\Santri::index');
@@ -126,6 +126,7 @@ $routes->group('guru', ['filter' => 'auth'], function ($routes) {
     $routes->post('pengaturan/update-password', 'Guru\Pengaturan::updatePassword');
 });
 
+// Grouping Wali Santri
 $routes->group('wali', ['filter' => 'auth'], function ($routes) {
     $routes->get('dashboard', 'Wali\Dashboard::index');
     $routes->get('santri-detail/(:num)', 'Wali\Dashboard::detailSantri/$1');

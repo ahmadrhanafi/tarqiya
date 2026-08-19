@@ -14,6 +14,7 @@ class Hafalan extends BaseController
     protected $santriModel;
     protected $guruModel;
     protected $kelasModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -26,21 +27,25 @@ class Hafalan extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session yang sedang aktif
+        $this->tenantId = session()->get('tenant_id');
     }
+
     public function index()
     {
         $role = session()->get('role');
-        $namakelas = $this->kelasModel->findAll();
 
         if ($role == 'admin') {
+            // Filter data berdasarkan tenant_id masing-masing lembaga
             $data = [
                 'title' => 'Data Hafalan',
                 'icon' => 'fa-solid fa-book-quran',
-                'hafalan' => $this->hafalanModel->getHafalanWithRelations()->paginate(6, 'hafalan'),
+                'hafalan' => $this->hafalanModel->getHafalanWithRelationsByTenant($this->tenantId)->paginate(6, 'hafalan'),
                 'pager' => $this->hafalanModel->pager,
-                'santri' => $this->santriModel->findAll(),
-                'guru' => $this->guruModel->findAll(),
-                'kelas' => $this->kelasModel->findAll(),
+                'santri' => $this->santriModel->where('tenant_id', $this->tenantId)->findAll(),
+                'guru' => $this->guruModel->where('tenant_id', $this->tenantId)->findAll(),
+                'kelas' => $this->kelasModel->where('tenant_id', $this->tenantId)->findAll(),
                 'role' => $role,
             ];
 
@@ -55,7 +60,7 @@ class Hafalan extends BaseController
     public function getSurahByJuz($juz)
     {
         if (CI_DEBUG) {
-            service('toolbar')->respond(); // matikan sementara
+            service('toolbar')->respond();
         }
 
         $model = new \App\Models\HafalanModel();
@@ -63,9 +68,11 @@ class Hafalan extends BaseController
 
         return $this->response->setJSON($data);
     }
+
     public function getSantriByGuru($idGuru)
     {
-        $guru = $this->guruModel->find($idGuru);
+        // Pastikan pencarian guru juga dibatasi oleh tenant_id jika diperlukan
+        $guru = $this->guruModel->where('id', $idGuru)->where('tenant_id', $this->tenantId)->first();
 
         if (!$guru || empty($guru['id_kelas_diampu'])) {
             return $this->response->setJSON([]);
@@ -73,14 +80,15 @@ class Hafalan extends BaseController
 
         $idKelas = $guru['id_kelas_diampu'];
 
-        $santri = $this->santriModel->where('id_kelas', $idKelas)->findAll();
+        $santri = $this->santriModel->where('id_kelas', $idKelas)
+            ->where('tenant_id', $this->tenantId)
+            ->findAll();
 
         return $this->response->setJSON($santri);
     }
 
     public function store()
     {
-        // Validasi input form
         if (
             !$this->validate([
                 'id_santri' => 'required|numeric',
@@ -96,7 +104,9 @@ class Hafalan extends BaseController
             return redirect()->back()->withInput()->with('error', 'Gagal menyimpan! Mohon lengkapi data dengan benar.');
         }
 
+        // Simpan data dengan menyertakan tenant_id aktif
         $this->hafalanModel->save([
+            'tenant_id' => $this->tenantId,
             'id_santri' => $this->request->getVar('id_santri'),
             'id_guru' => $this->request->getVar('id_guru'),
             'jenis' => $this->request->getVar('jenis'),
@@ -111,10 +121,8 @@ class Hafalan extends BaseController
         return redirect()->to(base_url('admin/hafalan'))->with('success', 'Data setoran hafalan berhasil ditambahkan!');
     }
 
-    // Method untuk Memperbarui Data Hafalan
     public function update($id)
     {
-        // Validasi input form edit
         if (
             !$this->validate([
                 'id_santri' => 'required|numeric',
@@ -128,6 +136,12 @@ class Hafalan extends BaseController
             ])
         ) {
             return redirect()->back()->withInput()->with('error', 'Gagal memperbarui! Mohon cek kembali inputan anda.');
+        }
+
+        // Pastikan data yang diedit benar-benar milik tenant yang sedang aktif (keamanan tambahan)
+        $hafalan = $this->hafalanModel->where('id', $id)->where('tenant_id', $this->tenantId)->first();
+        if (!$hafalan) {
+            return redirect()->to(base_url('admin/hafalan'))->with('error', 'Data hafalan tidak ditemukan.');
         }
 
         $this->hafalanModel->update($id, [
@@ -145,10 +159,10 @@ class Hafalan extends BaseController
         return redirect()->to(base_url('admin/hafalan'))->with('success', 'Data setoran hafalan berhasil diperbarui!');
     }
 
-    // Method untuk Menghapus Data Hafalan
     public function delete($id)
     {
-        $hafalan = $this->hafalanModel->find($id);
+        // Validasi kepemilikan data berdasarkan tenant_id
+        $hafalan = $this->hafalanModel->where('id', $id)->where('tenant_id', $this->tenantId)->first();
 
         if (!$hafalan) {
             return redirect()->to(base_url('admin/hafalan'))->with('error', 'Data hafalan tidak ditemukan.');

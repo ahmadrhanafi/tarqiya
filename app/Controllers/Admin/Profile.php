@@ -8,6 +8,7 @@ use App\Models\UserModel;
 class Profile extends BaseController
 {
     protected $userModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -17,12 +18,23 @@ class Profile extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session yang sedang aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
         $userId = session()->get('id');
-        $data['user'] = $this->userModel->find($userId);
+
+        // Ambil data user dengan memastikan kecocokan ID dan tenant_id
+        $data['user'] = $this->userModel->where('id', $userId)
+            ->where('tenant_id', $this->tenantId)
+            ->first();
+
+        if (!$data['user']) {
+            return redirect()->to(base_url('login'))->with('error', 'Sesi tidak valid.');
+        }
 
         return view('admin/profile', $data);
     }
@@ -30,12 +42,20 @@ class Profile extends BaseController
     public function update()
     {
         $userId = session()->get('id');
-        $user = $this->userModel->find($userId);
 
-        // Validasi input (ditambah validasi untuk foto)
+        // Pastikan user yang mengupdate profil benar-benar milik tenant aktif
+        $user = $this->userModel->where('id', $userId)
+            ->where('tenant_id', $this->tenantId)
+            ->first();
+
+        if (!$user) {
+            return redirect()->to(base_url('login'))->with('error', 'Sesi tidak valid.');
+        }
+
+        // Validasi input dengan membatasi keunikan username berdasarkan tenant_id yang sama
         $rules = [
             'name' => 'required|min_length[3]',
-            'username' => "required|min_length[3]|is_unique[users.username,id,{$userId}]",
+            'username' => "required|min_length[3]|is_unique[users.username,id,{$userId},tenant_id,{$this->tenantId}]",
             'foto' => 'max_size[foto,2048]|is_image[foto]|ext_in[foto,png,jpg,jpeg]',
         ];
 
@@ -58,6 +78,10 @@ class Profile extends BaseController
             $namaFoto = $fileFoto->getRandomName();
 
             $folderTujuan = 'uploads/profile/';
+            if (!is_dir($folderTujuan)) {
+                mkdir($folderTujuan, 0777, true);
+            }
+
             $fileFoto->move($folderTujuan, $namaFoto);
 
             if (!empty($user['foto']) && file_exists($folderTujuan . $user['foto'])) {

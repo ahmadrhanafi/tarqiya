@@ -19,11 +19,20 @@ class GuruModel extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
 
-    public function getGuruWithKelas()
+    public function getGuruWithUserByTenant($tenantId)
+    {
+        return $this->select('guru.*, users.foto as foto_user, users.id as user_id')
+            ->join('users', "users.ref_id = guru.id AND users.role = 'guru'", 'left')
+            ->where('guru.tenant_id', $tenantId)
+            ->findAll();
+    }
+
+    public function getGuruWithKelasByTenant($tenantId)
     {
         return $this->select('guru.*, kelas.nama_kelas, users.foto')
             ->join('kelas', 'kelas.id = guru.id_kelas_diampu', 'left')
             ->join('users', 'users.ref_id = guru.id AND users.role = "guru"', 'left')
+            ->where('guru.tenant_id', $tenantId)
             ->findAll();
     }
 }

@@ -103,24 +103,24 @@ class Auth extends BaseController
 
     public function resetPasswordGuru($id)
     {
-        $defaultPassword = password_hash('hudfal123456', PASSWORD_DEFAULT);
+        $defaultPassword = password_hash('123456', PASSWORD_DEFAULT);
         $user = $this->userModel->where(['ref_id' => $id, 'role' => 'guru'])->first();
 
         if ($user) {
             $this->userModel->update($user['id'], ['password' => $defaultPassword]);
-            return redirect()->back()->with('success', 'Password ' . $user['name'] . ' berhasil direset menjadi hudfal123456');
+            return redirect()->back()->with('success', 'Password ' . $user['name'] . ' berhasil direset menjadi 123456');
         }
         return redirect()->back()->with('error', 'Gagal menemukan akun guru tersebut.');
     }
 
     public function resetPasswordWali($id)
     {
-        $defaultPassword = password_hash('hudfal123456', PASSWORD_DEFAULT);
+        $defaultPassword = password_hash('123456', PASSWORD_DEFAULT);
         $user = $this->userModel->where(['ref_id' => $id, 'role' => 'wali'])->first();
 
         if ($user) {
             $this->userModel->update($user['id'], ['password' => $defaultPassword]);
-            return redirect()->back()->with('success', 'Password ' . $user['name'] . ' berhasil direset menjadi hudfal123456');
+            return redirect()->back()->with('success', 'Password ' . $user['name'] . ' berhasil direset menjadi 123456');
         }
         return redirect()->back()->with('error', 'Gagal menemukan akun wali tersebut.');
     }

@@ -12,6 +12,7 @@ class Ustadz extends BaseController
     protected $guruModel;
     protected $kelasModel;
     protected $userModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -23,17 +24,21 @@ class Ustadz extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session yang sedang aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
         $role = session()->get('role');
 
+        // Pastikan method getGuruWithByTenant() atau sejenisnya di GuruModel memfilter berdasarkan tenant_id
         $data = [
             'title' => 'Data Ustadz',
             'icon' => 'fa-solid fa-chalkboard-user',
-            'guru' => $this->guruModel->getGuruWithKelas(),
-            'kelas' => $this->kelasModel->findAll(),
+            'guru' => $this->guruModel->getGuruWithUserByTenant($this->tenantId),
+            'kelas' => $this->kelasModel->where('tenant_id', $this->tenantId)->findAll(),
             'role' => session()->get('role') ?? 'admin'
         ];
 
@@ -58,7 +63,8 @@ class Ustadz extends BaseController
         }
 
         $tahun = date('Y');
-        $lastGuru = $this->guruModel->orderBy('id', 'DESC')->first();
+        // Generate NIP berdasarkan tenant aktif agar tidak bentrok antar lembaga
+        $lastGuru = $this->guruModel->where('tenant_id', $this->tenantId)->orderBy('id', 'DESC')->first();
 
         if ($lastGuru && !empty($lastGuru['nip'])) {
             $lastNoUrut = (int) substr($lastGuru['nip'], -3);
@@ -75,6 +81,12 @@ class Ustadz extends BaseController
         $idKelasDiampu = $this->request->getVar('id_kelas_diampu');
         if (empty($idKelasDiampu)) {
             $idKelasDiampu = null;
+        } else {
+            // Validasi kelas milik tenant aktif
+            $cekKelas = $this->kelasModel->where('id', $idKelasDiampu)->where('tenant_id', $this->tenantId)->first();
+            if (!$cekKelas) {
+                return redirect()->back()->withInput()->with('error', 'Kelas yang dipilih tidak valid untuk lembaga ini.');
+            }
         }
 
         // Handle Upload Foto ke tabel users
@@ -82,11 +94,16 @@ class Ustadz extends BaseController
         $namaFoto = null;
         if ($fileFoto && $fileFoto->isValid() && !$fileFoto->hasMoved()) {
             $namaFoto = $fileFoto->getRandomName();
-            $fileFoto->move('uploads/profile', $namaFoto);
+            $folderTujuan = 'uploads/profile/';
+            if (!is_dir($folderTujuan)) {
+                mkdir($folderTujuan, 0777, true);
+            }
+            $fileFoto->move($folderTujuan, $namaFoto);
         }
 
-        // Simpan data guru
+        // Simpan data guru dengan menyertakan tenant_id
         $this->guruModel->save([
+            'tenant_id' => $this->tenantId,
             'nip' => $nip,
             'nama_guru' => $namaGuru,
             'no_hp' => $noHp,
@@ -97,8 +114,9 @@ class Ustadz extends BaseController
 
         $guruId = $this->guruModel->insertID();
 
-        // Simpan data user beserta foto
+        // Simpan data user beserta foto dan tenant_id
         $this->userModel->save([
+            'tenant_id' => $this->tenantId,
             'name' => $namaGuru,
             'username' => $nip,
             'password' => password_hash($nip, PASSWORD_DEFAULT),
@@ -112,6 +130,12 @@ class Ustadz extends BaseController
 
     public function update($id)
     {
+        // Pastikan guru yang akan diupdate benar-benar milik tenant aktif
+        $guruLama = $this->guruModel->where('id', $id)->where('tenant_id', $this->tenantId)->first();
+        if (!$guruLama) {
+            return redirect()->to(base_url('admin/ustadz'))->with('error', 'Data pengajar tidak ditemukan.');
+        }
+
         if (
             !$this->validate([
                 'nama_guru' => 'required|min_length[3]',
@@ -126,9 +150,12 @@ class Ustadz extends BaseController
         $idKelasDiampu = $this->request->getVar('id_kelas_diampu');
         if (empty($idKelasDiampu)) {
             $idKelasDiampu = null;
+        } else {
+            $cekKelas = $this->kelasModel->where('id', $idKelasDiampu)->where('tenant_id', $this->tenantId)->first();
+            if (!$cekKelas) {
+                return redirect()->back()->withInput()->with('error', 'Kelas yang dipilih tidak valid untuk lembaga ini.');
+            }
         }
-
-        $guruLama = $this->guruModel->find($id);
 
         $nip = $this->request->getVar('nip');
         if (empty($nip)) {
@@ -147,7 +174,10 @@ class Ustadz extends BaseController
             'status_aktif' => $this->request->getVar('status_aktif') ?? 'Aktif',
         ]);
 
-        $user = $this->userModel->where('ref_id', $id)->where('role', 'guru')->first();
+        $user = $this->userModel->where('ref_id', $id)
+            ->where('role', 'guru')
+            ->where('tenant_id', $this->tenantId)
+            ->first();
 
         if ($user) {
             $dataUpdateUser = [
@@ -175,8 +205,17 @@ class Ustadz extends BaseController
 
     public function delete($id)
     {
-        // Ambil data user untuk menghapus file foto fisiknya
-        $user = $this->userModel->where('ref_id', $id)->where('role', 'guru')->first();
+        // Pastikan guru milik tenant aktif sebelum dihapus
+        $guru = $this->guruModel->where('id', $id)->where('tenant_id', $this->tenantId)->first();
+        if (!$guru) {
+            return redirect()->to(base_url('admin/ustadz'))->with('error', 'Data pengajar tidak ditemukan.');
+        }
+
+        $user = $this->userModel->where('ref_id', $id)
+            ->where('role', 'guru')
+            ->where('tenant_id', $this->tenantId)
+            ->first();
+
         if ($user) {
             if (!empty($user['foto']) && file_exists('uploads/profile/' . $user['foto'])) {
                 unlink('uploads/profile/' . $user['foto']);

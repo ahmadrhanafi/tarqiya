@@ -14,6 +14,7 @@ class Santri extends BaseController
     protected $santriModel;
     protected $kelasModel;
     protected $waliModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -25,6 +26,9 @@ class Santri extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session yang sedang aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
@@ -33,15 +37,16 @@ class Santri extends BaseController
         $selectedKelas = $this->request->getGet('id_kelas');
         $selectedStatus = $this->request->getGet('status');
 
-        $kelasModel = new \App\Models\KelasModel();
-        $waliModel = new \App\Models\WaliModel();
+        // Modifikasi pencarian santri dengan menyertakan filter tenant_id di dalam model atau builder
+        // Pastikan SantriModel Anda mendukung filter tenant_id
+        $santriList = $this->santriModel->searchSantriByTenant($this->tenantId, $keyword, $selectedKelas, $selectedStatus);
 
         $data = [
             'title' => 'Data Santri',
             'icon' => 'fa-solid fa-user-graduate',
-            'santri' => $this->santriModel->searchSantri($keyword, $selectedKelas, $selectedStatus),
-            'kelas' => $kelasModel->findAll(),
-            'wali' => $waliModel->findAll(),
+            'santri' => $santriList,
+            'kelas' => $this->kelasModel->where('tenant_id', $this->tenantId)->findAll(),
+            'wali' => $this->waliModel->where('tenant_id', $this->tenantId)->findAll(),
             'keyword' => $keyword,
             'selectedKelas' => $selectedKelas,
             'selectedStatus' => $selectedStatus,
@@ -53,7 +58,6 @@ class Santri extends BaseController
 
     public function store()
     {
-        // Validasi input termasuk file foto (opsional/boleh kosong, tapi kalau diisi harus gambar valid)
         if (
             !$this->validate([
                 'nama_santri' => 'required|min_length[3]',
@@ -68,10 +72,20 @@ class Santri extends BaseController
             return redirect()->back()->withInput()->with('error', 'Gagal validasi data santri atau format foto salah (Maks. 2MB, format JPG/JPEG/PNG).');
         }
 
+        // Validasi tambahan: Pastikan kelas dan wali benar-benar milik tenant aktif
+        $cekKelas = $this->kelasModel->where('id', $this->request->getVar('id_kelas'))->where('tenant_id', $this->tenantId)->first();
+        $cekWali = $this->waliModel->where('id', $this->request->getVar('id_wali'))->where('tenant_id', $this->tenantId)->first();
+
+        if (!$cekKelas || !$cekWali) {
+            return redirect()->back()->withInput()->with('error', 'Data kelas atau wali tidak valid untuk lembaga ini.');
+        }
+
         $tahun = date('Y');
         $idKelas = str_pad($this->request->getVar('id_kelas'), 2, '0', STR_PAD_LEFT);
 
+        // Generate NIS unik berdasarkan tenant
         $lastSantri = $this->santriModel
+            ->where('tenant_id', $this->tenantId)
             ->like('nis', $tahun . $idKelas, 'after')
             ->orderBy('id', 'DESC')
             ->first();
@@ -90,10 +104,15 @@ class Santri extends BaseController
 
         if ($fileFoto && $fileFoto->isValid() && !$fileFoto->hasMoved()) {
             $namaFoto = $fileFoto->getRandomName();
-            $fileFoto->move('uploads/santri', $namaFoto);
+            $folderTujuan = 'uploads/santri/';
+            if (!is_dir($folderTujuan)) {
+                mkdir($folderTujuan, 0777, true);
+            }
+            $fileFoto->move($folderTujuan, $namaFoto);
         }
 
         $this->santriModel->save([
+            'tenant_id' => $this->tenantId,
             'nis' => $nis,
             'nama_santri' => $this->request->getVar('nama_santri'),
             'tempat_lahir' => $this->request->getVar('tempat_lahir'),
@@ -110,7 +129,12 @@ class Santri extends BaseController
 
     public function update($id)
     {
-        // Validasi update (foto bersifat opsional saat update, hanya divalidasi jika diunggah)
+        // Pastikan santri yang akan di-update milik tenant aktif
+        $santriLama = $this->santriModel->where('id', $id)->where('tenant_id', $this->tenantId)->first();
+        if (!$santriLama) {
+            return redirect()->to(base_url('admin/santri'))->with('error', 'Data santri tidak ditemukan.');
+        }
+
         $rules = [
             'nama_santri' => 'required|min_length[3]',
             'tempat_lahir' => 'required',
@@ -129,21 +153,25 @@ class Santri extends BaseController
             return redirect()->back()->withInput()->with('error', 'Gagal validasi data santri. Periksa kembali inputan Anda.');
         }
 
-        $santriLama = $this->santriModel->find($id);
+        // Validasi relasi kelas & wali milik tenant aktif
+        $cekKelas = $this->kelasModel->where('id', $this->request->getVar('id_kelas'))->where('tenant_id', $this->tenantId)->first();
+        $cekWali = $this->waliModel->where('id', $this->request->getVar('id_wali'))->where('tenant_id', $this->tenantId)->first();
+
+        if (!$cekKelas || !$cekWali) {
+            return redirect()->back()->withInput()->with('error', 'Data kelas atau wali tidak valid untuk lembaga ini.');
+        }
 
         $nis = $this->request->getVar('nis');
         if (empty($nis)) {
             $nis = $santriLama['nis'] ?? '';
         }
 
-        $namaFoto = $santriLama['foto']; // Tetap pakai foto lama by default
+        $namaFoto = $santriLama['foto'];
 
-        // Jika ada file foto baru yang di-upload
         if ($fileFoto && $fileFoto->isValid() && !$fileFoto->hasMoved()) {
             $namaFoto = $fileFoto->getRandomName();
             $fileFoto->move('uploads/santri', $namaFoto);
 
-            // Hapus foto lama jika ada
             if (!empty($santriLama['foto']) && file_exists('uploads/santri/' . $santriLama['foto'])) {
                 unlink('uploads/santri/' . $santriLama['foto']);
             }
@@ -166,12 +194,13 @@ class Santri extends BaseController
 
     public function delete($id)
     {
-        // Ambil data untuk hapus file fisik fotonya juga
-        $santri = $this->santriModel->find($id);
-        if ($santri && !empty($santri['foto'])) {
-            if (file_exists('uploads/santri/' . $santri['foto'])) {
-                unlink('uploads/santri/' . $santri['foto']);
-            }
+        $santri = $this->santriModel->where('id', $id)->where('tenant_id', $this->tenantId)->first();
+        if (!$santri) {
+            return redirect()->to(base_url('admin/santri'))->with('error', 'Data santri tidak ditemukan.');
+        }
+
+        if (!empty($santri['foto']) && file_exists('uploads/santri/' . $santri['foto'])) {
+            unlink('uploads/santri/' . $santri['foto']);
         }
 
         $this->santriModel->delete($id);
@@ -183,7 +212,9 @@ class Santri extends BaseController
         $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, wali.nama_wali, wali.no_hp as no_hp_wali, wali.alamat as alamat_wali')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
             ->join('wali', 'wali.id = santri.id_wali', 'left')
-            ->find($id);
+            ->where('santri.id', $id)
+            ->where('santri.tenant_id', $this->tenantId)
+            ->first();
 
         if (!$santri) {
             return redirect()->to(base_url('admin/santri'))->with('error', 'Data santri tidak ditemukan.');
@@ -202,7 +233,9 @@ class Santri extends BaseController
         $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, wali.no_hp as no_hp_wali, wali.alamat as alamat_wali')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
             ->join('wali', 'wali.id = santri.id_wali', 'left')
-            ->find($id);
+            ->where('santri.id', $id)
+            ->where('santri.tenant_id', $this->tenantId)
+            ->first();
 
         if (!$santri)
             return redirect()->back();
@@ -218,7 +251,6 @@ class Santri extends BaseController
             }
         }
 
-        // Konfigurasi Options Dompdf untuk Production (Hosting)
         $options = new \Dompdf\Options();
         $options->set('isRemoteEnabled', true);
         $options->set('isHtml5ParserEnabled', true);
@@ -241,7 +273,6 @@ class Santri extends BaseController
 
         $namaFile = "Kartu_Santri_" . preg_replace('/[^A-Za-z0-9_]/', '_', $santri['nama_santri']) . ".pdf";
 
-        // Paksa header agar dibaca sebagai aplikasi PDF oleh browser
         header("Content-Type: application/pdf");
         header("Content-Disposition: inline; filename=\"" . $namaFile . "\"");
 
