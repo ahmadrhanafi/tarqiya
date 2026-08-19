@@ -10,6 +10,7 @@ class Profile extends BaseController
 {
     protected $userModel;
     protected $waliModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -20,19 +21,24 @@ class Profile extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
         $userId = session()->get('id');
-        $user = $this->userModel->find($userId);
+        $user = $this->userModel->where('tenant_id', $this->tenantId)->find($userId);
 
         $wali = null;
         if (!empty($user['ref_id'])) {
-            $wali = $this->waliModel->find($user['ref_id']);
+            $wali = $this->waliModel->where('tenant_id', $this->tenantId)->find($user['ref_id']);
         }
 
         $data = [
+            'title' => 'Profil Pengguna',
+            'icon' => 'fa-solid fa-user',
             'user' => $user,
             'wali' => $wali
         ];
@@ -43,7 +49,11 @@ class Profile extends BaseController
     public function update()
     {
         $userId = session()->get('id');
-        $user = $this->userModel->find($userId);
+        $user = $this->userModel->where('tenant_id', $this->tenantId)->find($userId);
+
+        if (!$user) {
+            return redirect()->back()->with('error', 'Data pengguna tidak ditemukan.');
+        }
 
         $rules = [
             'name' => 'required|min_length[3]',
@@ -96,7 +106,9 @@ class Profile extends BaseController
                 'no_hp' => $this->request->getPost('no_hp'),
                 'alamat' => $this->request->getPost('alamat'),
             ];
-            $this->waliModel->update($user['ref_id'], $dataWaliUpdate);
+
+            // Pastikan pembaruan wali sesuai dengan tenant_id
+            $this->waliModel->where('tenant_id', $this->tenantId)->update($user['ref_id'], $dataWaliUpdate);
 
             session()->set('nama_wali', $dataWaliUpdate['nama_wali']);
         }

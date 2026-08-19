@@ -14,6 +14,7 @@ class RiwayatHafalan extends BaseController
     protected $santriModel;
     protected $guruModel;
     protected $kelasModel;
+    protected $tenantId; // Tambahkan properti tenantId
 
     public function __construct()
     {
@@ -26,34 +27,30 @@ class RiwayatHafalan extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
         $keyword = $this->request->getGet('keyword');
-
-        $namaGuru = session()->get('name');
         $idGuru = session()->get('ref_id');
 
-        $idKelasGuru = session()->get('id_kelas');
-        if (empty($idKelasGuru) && !empty($idGuru)) {
-            $guru = $this->guruModel->find($idGuru);
-            if (!$guru) {
-                $guru = $this->guruModel->where('nama_guru', $namaGuru)->first();
-            }
-            $idKelasGuru = $guru['id_kelas_diampu'] ?? null;
-        }
+        // Pastikan pencarian guru berdasarkan tenant_id
+        $guru = $this->guruModel->where('guru.tenant_id', $this->tenantId)->find($idGuru);
+        $idKelasGuru = $guru['id_kelas_diampu'] ?? session()->get('id_kelas');
 
-        // Ambil string nama kelas untuk ditampilkan di view
         $namaKelasString = '-';
         if (!empty($idKelasGuru)) {
-            $kelas = $this->kelasModel->find($idKelasGuru);
+            $kelas = $this->kelasModel->where('kelas.tenant_id', $this->tenantId)->find($idKelasGuru);
             $namaKelasString = $kelas['nama_kelas'] ?? '-';
         }
 
-        $builder = $this->santriModel->select('santri.*, kelas.nama_kelas, users.name as nama_wali, santri.foto')
+        // Query santri dengan tenant_id
+        $builder = $this->santriModel->select('santri.*, kelas.nama_kelas, users.name as nama_wali')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->join('users', 'users.ref_id = santri.id_wali AND users.role = "wali"', 'left');
+            ->join('users', 'users.ref_id = santri.id_wali AND users.role = "wali"', 'left')
+            ->where('santri.tenant_id', $this->tenantId);
 
         if (!empty($idKelasGuru)) {
             $builder->where('santri.id_kelas', $idKelasGuru);
@@ -69,7 +66,6 @@ class RiwayatHafalan extends BaseController
         }
 
         $santri = $builder->orderBy('santri.nama_santri', 'ASC')->findAll();
-
         $idSantriKelas = array_column($santri, 'id');
 
         $totalSetoranBulanIni = 0;
@@ -80,12 +76,15 @@ class RiwayatHafalan extends BaseController
             $bulanIni = date('m');
             $tahunIni = date('Y');
 
-            $totalSetoranBulanIni = $this->hafalanModel->whereIn('id_santri', $idSantriKelas)
+            // Tambahkan filter tenant_id pada setiap query statistik
+            $totalSetoranBulanIni = $this->hafalanModel->where('hafalan.tenant_id', $this->tenantId)
+                ->whereIn('id_santri', $idSantriKelas)
                 ->where('MONTH(created_at)', $bulanIni)
                 ->where('YEAR(created_at)', $tahunIni)
                 ->countAllResults();
 
             $santriAktifBulanIni = $this->hafalanModel->select('id_santri')
+                ->where('hafalan.tenant_id', $this->tenantId)
                 ->whereIn('id_santri', $idSantriKelas)
                 ->where('MONTH(created_at)', $bulanIni)
                 ->where('YEAR(created_at)', $tahunIni)
@@ -93,6 +92,7 @@ class RiwayatHafalan extends BaseController
                 ->countAllResults();
 
             $dominantPredikat = $this->hafalanModel->select('predikat, COUNT(predikat) as jumlah')
+                ->where('hafalan.tenant_id', $this->tenantId)
                 ->whereIn('id_santri', $idSantriKelas)
                 ->where('MONTH(created_at)', $bulanIni)
                 ->where('YEAR(created_at)', $tahunIni)
@@ -105,7 +105,7 @@ class RiwayatHafalan extends BaseController
             }
         }
 
-        $data = [
+        return view('guru/riwayat_hafalan', [
             'title' => 'Riwayat Hafalan',
             'santri' => $santri,
             'keyword' => $keyword,
@@ -114,62 +114,48 @@ class RiwayatHafalan extends BaseController
             'santri_aktif' => $santriAktifBulanIni,
             'total_santri' => count($santri),
             'predikat_umum' => $predikatUmum
-        ];
-
-        return view('guru/riwayat_hafalan', $data);
+        ]);
     }
 
-    // Menampilkan detail riwayat setoran hafalan per santri
     public function detail($id_santri)
     {
-        $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, santri.foto')
-            ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->where('santri.id', $id_santri)
+        $santri = $this->santriModel->where('tenant_id', $this->tenantId)
+            ->where('id', $id_santri)
             ->first();
 
         if (!$santri) {
             return redirect()->back()->with('error', 'Data santri tidak ditemukan.');
         }
 
-        $riwayat = $this->hafalanModel->where('id_santri', $id_santri)
+        $riwayat = $this->hafalanModel->where('tenant_id', $this->tenantId)
+            ->where('id_santri', $id_santri)
             ->orderBy('created_at', 'DESC')
             ->findAll();
 
-        $data = [
+        return view('guru/_detail_riwayat_hafalan', [
             'title' => 'Detail Riwayat Hafalan - ' . $santri['nama_santri'],
             'icon' => 'fa-solid fa-book-quran',
             'santri' => $santri,
             'riwayat' => $riwayat
-        ];
-
-        return view('guru/_detail_riwayat_hafalan', $data);
+        ]);
     }
 
     public function ekspor()
     {
+        // Pastikan akses ekspor hanya untuk tenant aktif
         $idGuru = session()->get('ref_id');
-        $namaGuru = session()->get('name');
-        $idKelasGuru = session()->get('id_kelas');
-
-        if (empty($idKelasGuru) && !empty($idGuru)) {
-            $guru = $this->guruModel->find($idGuru);
-            if (!$guru) {
-                $guru = $this->guruModel->where('nama_guru', $namaGuru)->first();
-            }
-            $idKelasGuru = $guru['id_kelas_diampu'] ?? null;
-        }
+        $guru = $this->guruModel->where('tenant_id', $this->tenantId)->find($idGuru);
+        $idKelasGuru = $guru['id_kelas_diampu'] ?? session()->get('id_kelas');
 
         if (empty($idKelasGuru)) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki kelas yang diampu untuk diekspor.');
+            return redirect()->back()->with('error', 'Akses ditolak.');
         }
 
-        $kelas = $this->kelasModel->find($idKelasGuru);
+        $kelas = $this->kelasModel->where('tenant_id', $this->tenantId)->find($idKelasGuru);
         $namaKelas = $kelas['nama_kelas'] ?? 'Kelas';
 
-        $santri = $this->santriModel->select('santri.*, kelas.nama_kelas')
-            ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->where('santri.id_kelas', $idKelasGuru)
-            ->orderBy('santri.nama_santri', 'ASC')
+        $santri = $this->santriModel->where('tenant_id', $this->tenantId)
+            ->where('id_kelas', $idKelasGuru)
             ->findAll();
 
         $filename = 'Rekap_Hafalan_' . str_replace(' ', '_', $namaKelas) . '_' . date('Y-m-d') . '.csv';

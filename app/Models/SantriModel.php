@@ -90,7 +90,7 @@ class SantriModel extends Model
     {
         return $this->select('santri.*, kelas.nama_kelas')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'inner')
-            ->where('santri.tenant_id', $tenantId)
+            ->where('santri.tenant_id', $tenantId) // <-- Diperbaiki dari 'tenant_id' menjadi 'santri.tenant_id'
             ->where('santri.id_kelas', $idKelas)
             ->findAll();
     }

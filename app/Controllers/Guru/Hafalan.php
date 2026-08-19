@@ -14,6 +14,7 @@ class Hafalan extends BaseController
     protected $santriModel;
     protected $guruModel;
     protected $kelasModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -26,6 +27,9 @@ class Hafalan extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
@@ -33,18 +37,26 @@ class Hafalan extends BaseController
         $idGuru = session()->get('ref_id');
         $idKelas = session()->get('id_kelas');
 
-        $guru = $this->guruModel->find($idGuru);
+        // Cari data guru berdasarkan tenant_id dan id
+        $guru = $this->guruModel->where('guru.tenant_id', $this->tenantId)->find($idGuru);
         $id_kelas_diampu = $guru['id_kelas_diampu'] ?? $idKelas;
-        $kelas = $this->kelasModel->find($id_kelas_diampu);
 
+        // Ambil data kelas berdasarkan tenant_id
+        $kelas = $this->kelasModel->where('kelas.tenant_id', $this->tenantId)->find($id_kelas_diampu);
+
+        // Menggunakan prefix tabel spesifik pada hafalanModel untuk mencegah error ambigu pada JOIN
         $data = [
             'title' => 'Data Hafalan',
             'icon' => 'fa-solid fa-book-quran',
             'nama_kelas' => $kelas['nama_kelas'] ?? '-',
-            'hafalan' => $this->hafalanModel->getHafalanByGuru($idGuru)->paginate(6, 'hafalan'),
+            'hafalan' => $this->hafalanModel->where('hafalan.tenant_id', $this->tenantId)
+                ->getHafalanByGuru($idGuru)
+                ->paginate(6, 'hafalan'),
             'pager' => $this->hafalanModel->pager,
-            'santri' => $this->santriModel->getSantriByKelas($id_kelas_diampu),
-            'guru' => $this->guruModel->findAll()
+            'santri' => $this->santriModel->where('santri.tenant_id', $this->tenantId)
+                ->where('santri.id_kelas', $id_kelas_diampu)
+                ->findAll(),
+            'guru' => $this->guruModel->where('guru.tenant_id', $this->tenantId)->findAll()
         ];
 
         return view('guru/data_hafalan', $data);
@@ -52,8 +64,7 @@ class Hafalan extends BaseController
 
     public function getSurahByJuz($juz)
     {
-        $model = new \App\Models\HafalanModel();
-        $data = $model->getSurahByJuz($juz);
+        $data = $this->hafalanModel->getSurahByJuz($juz);
         return $this->response->setJSON($data);
     }
 
@@ -73,7 +84,6 @@ class Hafalan extends BaseController
             return redirect()->back()->withInput()->with('error', 'Mohon lengkapi data dengan benar.');
         }
 
-        // TAMBAHAN: Validasi Logika Ayat
         $ayatMulai = $this->request->getVar('ayat_mulai');
         $ayatSelesai = $this->request->getVar('ayat_selesai');
 
@@ -81,7 +91,9 @@ class Hafalan extends BaseController
             return redirect()->back()->withInput()->with('error', 'Ayat selesai tidak boleh lebih kecil dari ayat mulai.');
         }
 
+        // Simpan data dengan menyertakan tenant_id
         $this->hafalanModel->save([
+            'tenant_id' => $this->tenantId,
             'id_santri' => $this->request->getVar('id_santri'),
             'id_guru' => session()->get('ref_id'),
             'jenis' => $this->request->getVar('jenis'),
@@ -98,7 +110,9 @@ class Hafalan extends BaseController
 
     public function update($id)
     {
-        $hafalan = $this->hafalanModel->find($id);
+        // Validasi kepemilikan berdasarkan ID, tenant_id, dan guru yang bersangkutan
+        $hafalan = $this->hafalanModel->where('hafalan.tenant_id', $this->tenantId)->find($id);
+
         if (!$hafalan || $hafalan['id_guru'] != session()->get('ref_id')) {
             return redirect()->to(base_url('guru/hafalan'))->with('error', 'Akses ditolak! Data tidak ditemukan atau bukan milik Anda.');
         }
@@ -118,6 +132,7 @@ class Hafalan extends BaseController
         }
 
         $this->hafalanModel->update($id, [
+            'tenant_id' => $this->tenantId,
             'id_santri' => $this->request->getVar('id_santri'),
             'id_guru' => session()->get('ref_id'),
             'jenis' => $this->request->getVar('jenis'),
@@ -134,7 +149,8 @@ class Hafalan extends BaseController
 
     public function delete($id)
     {
-        $hafalan = $this->hafalanModel->find($id);
+        // Validasi data berdasarkan tenant_id dan kepemilikan guru
+        $hafalan = $this->hafalanModel->where('hafalan.tenant_id', $this->tenantId)->find($id);
 
         if (!$hafalan || $hafalan['id_guru'] != session()->get('ref_id')) {
             return redirect()->to(base_url('guru/hafalan'))->with('error', 'Akses ditolak! Anda tidak berhak menghapus data ini.');

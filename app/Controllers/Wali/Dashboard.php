@@ -14,6 +14,7 @@ class Dashboard extends BaseController
     protected $santriModel;
     protected $hafalanModel;
     protected $pembayaranModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -25,24 +26,30 @@ class Dashboard extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
-        $santriModel = new SantriModel();
-        $this->hafalanModel = new HafalanModel();
         $idWali = session()->get('ref_id') ?? session()->get('id');
 
-        $anak = $santriModel->select('santri.*, kelas.nama_kelas')
+        // Filter pencarian anak berdasarkan tenant_id dan id_wali
+        $anak = $this->santriModel->select('santri.*, kelas.nama_kelas')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
+            ->where('santri.tenant_id', $this->tenantId)
             ->where('santri.id_wali', $idWali)
             ->findAll();
 
         if (!empty($anak)) {
             foreach ($anak as &$a) {
-                $a['stat_total_setoran'] = $this->hafalanModel->where('id_santri', $a['id'])->countAllResults();
+                $a['stat_total_setoran'] = $this->hafalanModel->where('hafalan.tenant_id', $this->tenantId)
+                    ->where('id_santri', $a['id'])
+                    ->countAllResults();
 
                 $terakhir = $this->hafalanModel->select('juz, ayat_mulai, ayat_selesai')
+                    ->where('hafalan.tenant_id', $this->tenantId)
                     ->where('id_santri', $a['id'])
                     ->orderBy('created_at', 'DESC')
                     ->first();
@@ -63,6 +70,7 @@ class Dashboard extends BaseController
         if (!empty($idsAnak)) {
             $setoranTerbaru = $this->hafalanModel->select('hafalan.*, santri.nama_santri as nama_santri, santri.nis')
                 ->join('santri', 'santri.id = hafalan.id_santri', 'inner')
+                ->where('hafalan.tenant_id', $this->tenantId)
                 ->whereIn('hafalan.id_santri', $idsAnak)
                 ->orderBy('hafalan.created_at', 'DESC')
                 ->limit(5)
@@ -71,6 +79,7 @@ class Dashboard extends BaseController
             $tagihanTerbaru = $this->pembayaranModel->select('pembayaran.*, santri.nama_santri, kelas.nama_kelas')
                 ->join('santri', 'santri.id = pembayaran.id_santri', 'inner')
                 ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
+                ->where('pembayaran.tenant_id', $this->tenantId)
                 ->whereIn('pembayaran.id_santri', $idsAnak)
                 ->orderBy('pembayaran.created_at', 'DESC')
                 ->limit(4)
@@ -90,13 +99,18 @@ class Dashboard extends BaseController
 
     public function detailSantri($id)
     {
-        $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, wali.nama_wali, wali.no_hp as no_hp_wali, wali.alamat as alamat_wali')
+        // Validasi relasi santri berdasarkan tenant_id dan kepemilikan wali
+        $idWali = session()->get('ref_id') ?? session()->get('id');
+
+        $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, users.name as nama_wali, users.phone as no_hp_wali, users.address as alamat_wali')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->join('wali', 'wali.id = santri.id_wali', 'left')
+            ->join('users', 'users.ref_id = santri.id_wali AND users.role = "wali"', 'left')
+            ->where('santri.tenant_id', $this->tenantId)
+            ->where('santri.id_wali', $idWali)
             ->find($id);
 
         if (!$santri) {
-            return redirect()->to(base_url('admin/santri'))->with('error', 'Data santri tidak ditemukan.');
+            return redirect()->to(base_url('wali/dashboard'))->with('error', 'Data santri tidak ditemukan atau bukan anak Anda.');
         }
 
         $data = [
@@ -110,13 +124,18 @@ class Dashboard extends BaseController
 
     public function cetakKartu($id)
     {
-        $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, wali.no_hp as no_hp_wali, wali.alamat as alamat_wali')
+        $idWali = session()->get('ref_id') ?? session()->get('id');
+
+        $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, users.phone as no_hp_wali, users.address as alamat_wali')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->join('wali', 'wali.id = santri.id_wali', 'left')
+            ->join('users', 'users.ref_id = santri.id_wali AND users.role = "wali"', 'left')
+            ->where('santri.tenant_id', $this->tenantId)
+            ->where('santri.id_wali', $idWali)
             ->find($id);
 
-        if (!$santri)
+        if (!$santri) {
             return redirect()->back();
+        }
 
         $base64FotoSantri = null;
 
@@ -151,7 +170,6 @@ class Dashboard extends BaseController
 
         $namaFile = "Kartu_Santri_" . preg_replace('/[^A-Za-z0-9_]/', '_', $santri['nama_santri']) . ".pdf";
 
-        // Paksa header agar dibaca sebagai aplikasi PDF oleh browser
         header("Content-Type: application/pdf");
         header("Content-Disposition: inline; filename=\"" . $namaFile . "\"");
 

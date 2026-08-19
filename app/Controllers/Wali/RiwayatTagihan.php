@@ -8,13 +8,19 @@ use App\Models\PembayaranModel;
 
 class RiwayatTagihan extends BaseController
 {
+    protected $tenantId;
+
     public function __construct()
     {
         if (!session()->get('logged_in') || session()->get('role') !== 'wali') {
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session aktif
+        $this->tenantId = session()->get('tenant_id');
     }
+
     public function index()
     {
         $santriModel = new SantriModel();
@@ -22,8 +28,10 @@ class RiwayatTagihan extends BaseController
 
         $idWali = session()->get('ref_id') ?? session()->get('id');
 
+        // Ambil data anak berdasarkan tenant_id dan id_wali
         $anak = $santriModel->select('santri.*, kelas.nama_kelas')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
+            ->where('santri.tenant_id', $this->tenantId)
             ->where('santri.id_wali', $idWali)
             ->findAll();
 
@@ -47,22 +55,25 @@ class RiwayatTagihan extends BaseController
 
             $totalLunas = $pembayaranModel->db->table('pembayaran')
                 ->selectSum('jumlah')
+                ->where('tenant_id', $this->tenantId)
                 ->whereIn('id_santri', $targetIdsAnak)
                 ->where('status', 'Lunas')
                 ->get()->getRow()->jumlah ?? 0;
 
             $totalTagihanAktif = $pembayaranModel->db->table('pembayaran')
                 ->selectSum('jumlah')
+                ->where('tenant_id', $this->tenantId)
                 ->whereIn('id_santri', $targetIdsAnak)
                 ->whereIn('status', ['Pending', 'Menunggu Verifikasi', 'tertunda'])
                 ->get()->getRow()->jumlah ?? 0;
 
             $jumlahPending = $pembayaranModel->db->table('pembayaran')
+                ->where('tenant_id', $this->tenantId)
                 ->whereIn('id_santri', $targetIdsAnak)
                 ->whereIn('status', ['Pending', 'Menunggu Verifikasi', 'tertunda'])
                 ->countAllResults();
 
-            $builder = $pembayaranModel->getPembayaranWithSantri();
+            $builder = $pembayaranModel->getPembayaranWithSantriByTenant($this->tenantId);
 
             if (!empty($selectedSantri) && in_array($selectedSantri, $idsAnak)) {
                 $builder->where('pembayaran.id_santri', $selectedSantri);
@@ -106,12 +117,12 @@ class RiwayatTagihan extends BaseController
         return view('wali/riwayat_tagihan', $data);
     }
 
-    // Method baru buat memproses konfirmasi pembayaran dari wali santri
     public function konfirmasi($id)
     {
         $pembayaranModel = new PembayaranModel();
 
-        $tagihan = $pembayaranModel->find($id);
+        // Validasi tagihan berdasarkan tenant_id aktif
+        $tagihan = $pembayaranModel->where('tenant_id', $this->tenantId)->find($id);
         if (!$tagihan) {
             return redirect()->back()->with('error', 'Data tagihan tidak ditemukan.');
         }
@@ -140,7 +151,7 @@ class RiwayatTagihan extends BaseController
     {
         $pembayaranModel = new PembayaranModel();
 
-        $tagihan = $pembayaranModel->getPembayaranWithSantri()
+        $tagihan = $pembayaranModel->getPembayaranWithSantriByTenant($this->tenantId)
             ->where('pembayaran.id', $id)
             ->first();
 
@@ -173,7 +184,9 @@ class RiwayatTagihan extends BaseController
 
         $idWali = session()->get('ref_id') ?? session()->get('id');
 
-        $anak = $santriModel->where('santri.id_wali', $idWali)->findAll();
+        $anak = $santriModel->where('tenant_id', $this->tenantId)
+            ->where('id_wali', $idWali)
+            ->findAll();
         $idsAnak = array_column($anak, 'id');
 
         $selectedSantri = $this->request->getGet('id_santri');
@@ -182,7 +195,7 @@ class RiwayatTagihan extends BaseController
         $dataPembayaran = [];
 
         if (!empty($idsAnak)) {
-            $builder = $pembayaranModel->getPembayaranWithSantri();
+            $builder = $pembayaranModel->getPembayaranWithSantriByTenant($this->tenantId);
 
             if (!empty($selectedSantri) && in_array($selectedSantri, $idsAnak)) {
                 $builder->where('pembayaran.id_santri', $selectedSantri);
@@ -199,7 +212,6 @@ class RiwayatTagihan extends BaseController
 
         $filename = "Riwayat-Tagihan-Wali-" . date('Y-m-d') . ".xls";
 
-        // Header untuk file Excel
         header("Content-Type: application/vnd.ms-excel");
         header("Content-Disposition: attachment; filename=\"$filename\"");
         header("Pragma: no-cache");

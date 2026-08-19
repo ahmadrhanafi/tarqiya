@@ -14,6 +14,7 @@ class Santri extends BaseController
     protected $santriModel;
     protected $guruModel;
     protected $kelasModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -25,6 +26,9 @@ class Santri extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session yang sedang aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
@@ -33,28 +37,29 @@ class Santri extends BaseController
         $namaGuru = session()->get('name');
 
         if ($role == 'guru') {
-            $guru = $this->guruModel->where('nama_guru', $namaGuru)->first();
+            // Cari data guru berdasarkan tenant_id dan namanya (gunakan 'guru.tenant_id')
+            $guru = $this->guruModel->where('guru.tenant_id', $this->tenantId)
+                ->where('nama_guru', $namaGuru)->first();
 
             if (!$guru) {
-                $guru = $this->guruModel->like('nama_guru', str_replace(['Ust.', 'Ustz.'], '', $namaGuru))->first();
+                $guru = $this->guruModel->where('guru.tenant_id', $this->tenantId)
+                    ->like('nama_guru', str_replace(['Ust.', 'Ustz.'], '', $namaGuru))->first();
             }
 
             $idKelasDiampu = $guru ? $guru['id_kelas_diampu'] : null;
 
             $namaKelasString = '-';
             if ($idKelasDiampu) {
-                $kelas = $this->kelasModel->find($idKelasDiampu);
+                // Perbaikan: gunakan 'kelas.tenant_id' agar tidak ambigu
+                $kelas = $this->kelasModel->where('kelas.tenant_id', $this->tenantId)->find($idKelasDiampu);
                 $namaKelasString = $kelas['nama_kelas'] ?? '-';
             }
 
             $keyword = $this->request->getGet('keyword');
             $status = $this->request->getGet('status');
 
-            $santri = $this->santriModel->searchSantri($keyword, $idKelasDiampu, $status);
-
-            // Jika searchSantri mengembalikan query builder, tambahkan paginate(10) atau findAll()
-            // Contoh jika pakai pagination: 
-            // $santri = $this->santriModel->searchSantri($keyword, $idKelasDiampu, $status)->paginate(10, 'santri');
+            // Gunakan method berbasis tenant di Model
+            $santri = $this->santriModel->searchSantriByTenant($this->tenantId, $keyword, $idKelasDiampu, $status);
 
             $data = [
                 'title' => 'Data Santri',
@@ -74,13 +79,11 @@ class Santri extends BaseController
 
     public function detail($id)
     {
-        $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, wali.nama_wali, wali.no_hp as no_hp_wali, wali.alamat as alamat_wali')
-            ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->join('wali', 'wali.id = santri.id_wali', 'left')
-            ->find($id);
+        // Ambil detail santri dengan validasi tenant_id
+        $santri = $this->santriModel->getSantriWithRelationsByTenant($this->tenantId, $id);
 
         if (!$santri) {
-            return redirect()->to(base_url('admin/santri'))->with('error', 'Data santri tidak ditemukan.');
+            return redirect()->to(base_url('guru/santri'))->with('error', 'Data santri tidak ditemukan.');
         }
 
         $data = [
@@ -93,13 +96,11 @@ class Santri extends BaseController
 
     public function cetakKartu($id)
     {
-        $santri = $this->santriModel->select('santri.*, kelas.nama_kelas, wali.no_hp as no_hp_wali, wali.alamat as alamat_wali')
-            ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-            ->join('wali', 'wali.id = santri.id_wali', 'left')
-            ->find($id);
+        $santri = $this->santriModel->getSantriWithRelationsByTenant($this->tenantId, $id);
 
-        if (!$santri)
+        if (!$santri) {
             return redirect()->back();
+        }
 
         $base64FotoSantri = null;
 
@@ -112,7 +113,6 @@ class Santri extends BaseController
             }
         }
 
-        // Konfigurasi Options Dompdf untuk Production (Hosting)
         $options = new \Dompdf\Options();
         $options->set('isRemoteEnabled', true);
         $options->set('isHtml5ParserEnabled', true);
@@ -135,7 +135,6 @@ class Santri extends BaseController
 
         $namaFile = "Kartu_Santri_" . preg_replace('/[^A-Za-z0-9_]/', '_', $santri['nama_santri']) . ".pdf";
 
-        // Paksa header agar dibaca sebagai aplikasi PDF oleh browser
         header("Content-Type: application/pdf");
         header("Content-Disposition: inline; filename=\"" . $namaFile . "\"");
 
@@ -151,18 +150,21 @@ class Santri extends BaseController
         }
 
         $namaGuru = session()->get('name');
-        $guru = $this->guruModel->where('nama_guru', $namaGuru)->first();
+        $guru = $this->guruModel->where('guru.tenant_id', $this->tenantId)
+            ->where('nama_guru', $namaGuru)->first();
 
         if (!$guru) {
-            $guru = $this->guruModel->like('nama_guru', str_replace(['Ust.', 'Ustz.'], '', $namaGuru))->first();
+            $guru = $this->guruModel->where('guru.tenant_id', $this->tenantId)
+                ->like('nama_guru', str_replace(['Ust.', 'Ustz.'], '', $namaGuru))->first();
         }
 
         $idKelasDiampu = $guru ? $guru['id_kelas_diampu'] : null;
 
-        $santri = $this->santriModel->searchSantri(null, $idKelasDiampu, null);
+        // Ambil data santri dengan searchSantriByTenant
+        $santri = $this->santriModel->searchSantriByTenant($this->tenantId, null, $idKelasDiampu, null);
 
-        $kelasModel = new \App\Models\KelasModel();
-        $kelas = $kelasModel->find($idKelasDiampu);
+        // Perbaikan: gunakan 'kelas.tenant_id'
+        $kelas = $this->kelasModel->where('kelas.tenant_id', $this->tenantId)->find($idKelasDiampu);
 
         $data = [
             'nama_guru' => $guru['nama_guru'] ?? '-',
@@ -170,7 +172,6 @@ class Santri extends BaseController
             'santri' => $santri
         ];
 
-        // FITUR OPSIONAL: Jika diakses dengan /cetak?print=1 di URL, tampilkan debug isinya
         if ($this->request->getGet('print') == 1) {
             echo "<pre>";
             print_r($data);

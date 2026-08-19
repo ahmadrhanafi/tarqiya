@@ -10,6 +10,7 @@ class Pengaturan extends BaseController
 {
     protected $guruModel;
     protected $userModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -20,6 +21,9 @@ class Pengaturan extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
@@ -27,15 +31,19 @@ class Pengaturan extends BaseController
         $userId = session()->get('id');
         $userNama = session()->get('name');
 
+        // Cari data guru berdasarkan tenant_id dan nama
         $guru = $this->guruModel->select('guru.*, kelas.nama_kelas')
             ->join('kelas', 'kelas.id = guru.id_kelas_diampu', 'left')
+            ->where('guru.tenant_id', $this->tenantId)
             ->where('guru.nama_guru', $userNama)
             ->first();
 
         if (!$guru) {
+            // Fallback cari berdasarkan tenant_id dan id/ref_id
             $guru = $this->guruModel->select('guru.*, kelas.nama_kelas')
                 ->join('kelas', 'kelas.id = guru.id_kelas_diampu', 'left')
-                ->find($userId);
+                ->where('guru.tenant_id', $this->tenantId)
+                ->find(session()->get('ref_id') ?? $userId);
         }
 
         $data = [
@@ -51,15 +59,19 @@ class Pengaturan extends BaseController
         $userId = session()->get('id');
         $userNama = session()->get('name');
 
-        $guru = $this->guruModel->where('nama_guru', $userNama)->first();
+        // Cari data guru dengan filter tenant_id
+        $guru = $this->guruModel->where('tenant_id', $this->tenantId)
+            ->where('nama_guru', $userNama)->first();
         if (!$guru) {
-            $guru = $this->guruModel->find($userId);
+            $guru = $this->guruModel->where('tenant_id', $this->tenantId)
+                ->find(session()->get('ref_id') ?? $userId);
         }
 
         if (!$guru) {
             return redirect()->to('/guru/pengaturan')->with('error', 'Data profil guru tidak ditemukan.');
         }
 
+        // Update profil guru (pastikan tenant_id juga terjaga)
         $this->guruModel->update($guru['id'], [
             'nama_guru' => $this->request->getPost('nama_guru'),
             'no_hp' => $this->request->getPost('no_hp'),
@@ -71,7 +83,13 @@ class Pengaturan extends BaseController
     public function updatePassword()
     {
         $userId = session()->get('id');
-        $user = $this->userModel->find($userId);
+
+        // Ambil data user dengan validasi tenant_id agar aman
+        $user = $this->userModel->where('tenant_id', $this->tenantId)->find($userId);
+
+        if (!$user) {
+            return redirect()->to('/guru/pengaturan')->with('error', 'Akun pengguna tidak ditemukan.');
+        }
 
         $currentPassword = $this->request->getPost('current_password');
         $newPassword = $this->request->getPost('new_password');

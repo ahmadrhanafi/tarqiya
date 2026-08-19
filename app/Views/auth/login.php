@@ -4,40 +4,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Tarqiya</title>
-    <link rel="shortcut icon" href="<?= base_url('mainicon.png') ?>" type="image/png">
+    <title>Login | Tarqiya - Platform Qur'an Insight via Analytics Monitoring</title>
+    <link rel="shortcut icon" href="<?= base_url('assets/img/mainicon.png') ?>" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
             background-image: url('<?= base_url('assets/img/bg_login.png') ?>');
             background-size: cover;
-            background-position: center;
+            background-position: center 30%;
+            /* Digeser sedikit ke bawah agar teks "Tarqiya" di atas terlihat */
             background-repeat: no-repeat;
-            /* Menghitamkan background (angka 0.4 adalah tingkat gelapnya, bisa diubah dari 0.1 sampai 0.9) */
             background-color: rgba(0, 0, 0, 0.4);
             background-blend-mode: overlay;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
-            padding-left: 8%;
+            justify-content: center;
+            padding: 20px;
             margin: 0;
+        }
+
+        @font-face {
+            font-family: 'ArabicLook';
+            src: url('<?= base_url('assets/fonts/Khodijah.ttf') ?>') format('truetype');
+        }
+
+        .title-arab-latin {
+            font-family: 'ArabicLook', sans-serif;
+            color: #06754b;
         }
 
         .login-card {
             width: 100%;
             max-width: 420px;
-            padding: 40px;
+            padding: 35px;
             background: white;
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            margin-top: 120px;
+            /* Memberikan jarak dari atas agar tidak menabrak teks Tarqiya */
         }
 
         .btn-custom {
-            background-color: #1e970e;
+            background-color: #06754b;
             color: white;
             font-weight: 600;
             padding: 12px;
@@ -46,7 +61,7 @@
         }
 
         .btn-custom:hover {
-            background-color: #156d0a;
+            background-color: #095739;
             color: white;
             transform: translateY(-2px);
         }
@@ -141,6 +156,7 @@
                 width: 100% !important;
                 max-width: 420px !important;
                 padding: 30px !important;
+                margin-top: 0;
             }
         }
     </style>
@@ -148,11 +164,11 @@
 
 <body>
 
-    <div class="container-fluid p-0">
+    <div class="container-fluid p-0 d-flex justify-content-center align-items-center">
         <div class="login-card">
             <div class="text-center mb-4">
-                <h3 class="fw-bold" style="color: #1e970e;">Selamat Datang</h3>
-                <p class="text-muted">Silahkan Login ke Dashboard Tarqiya</p>
+                <h3 class="fw-bold title-arab-latin" style="font-size: 2rem;">Ahlan wa Sahlan</h3>
+                <p class="text-muted">Silahkan Login ke Platform Tarqiya</p>
             </div>
 
             <?php if (session()->getFlashdata('error')): ?>
@@ -172,12 +188,12 @@
             <form action="<?= base_url('auth/process') ?>" method="post">
                 <?= csrf_field() ?>
                 <div class="mb-3">
-                    <label class="form-label fw-bold" style="font-size: 0.8rem; color: #1e970e;">Username</label>
+                    <label class="form-label fw-bold" style="font-size: 0.8rem; color: #06754b;">Username</label>
                     <input type="text" name="username" class="form-control" placeholder="Masukkan username" required>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold" style="font-size: 0.8rem; color: #1e970e;">Password</label>
+                    <label class="form-label fw-bold" style="font-size: 0.8rem; color: #06754b;">Password</label>
                     <div class="input-group">
                         <input type="password" name="password" id="password" class="form-control" placeholder="••••••••"
                             required>
@@ -197,11 +213,11 @@
                     </a>
                 </div>
 
-                <button type="submit" class="btn btn-custom w-100 shadow-sm mb-3">Login Sekarang</button>
+                <button type="submit" class="btn btn-custom w-100 shadow-sm">Login Sekarang</button>
 
                 <div class="divider">Atau masuk dengan</div>
 
-                <!-- Tombol Login Google (Siap dihubungkan ke route Google OAuth nanti) -->
+                <!-- Tombol Login Google -->
                 <a href="<?= base_url('auth/google') ?>" class="btn btn-google w-100 shadow-sm text-decoration-none">
                     <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                         <path fill="#EA4335"

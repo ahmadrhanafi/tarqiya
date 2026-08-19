@@ -11,25 +11,34 @@ class Statistik extends BaseController
 {
     protected $santriModel;
     protected $hafalanModel;
+    protected $userModel;
+    protected $tenantId;
 
     public function __construct()
     {
         $this->santriModel = new SantriModel();
         $this->hafalanModel = new HafalanModel();
+        $this->userModel = new UserModel();
 
         if (!session()->get('logged_in') || session()->get('role') !== 'wali') {
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
         $userId = session()->get('id');
-        $user = (new UserModel())->find($userId);
-        $id_wali = $user['ref_id'] ?? $userId;
+        $user = $this->userModel->where('tenant_id', $this->tenantId)->find($userId);
+        $id_wali = $user['ref_id'] ?? session()->get('ref_id') ?? $userId;
 
-        $data['anak'] = $this->santriModel->where('id_wali', $id_wali)->findAll();
+        // Filter data anak berdasarkan tenant_id dan id_wali
+        $data['anak'] = $this->santriModel->where('tenant_id', $this->tenantId)
+            ->where('id_wali', $id_wali)
+            ->findAll();
 
         if (empty($data['anak'])) {
             $data['title'] = 'Statistik Hafalan';
@@ -62,7 +71,8 @@ class Statistik extends BaseController
         $chartZiyadah = [];
         $chartMurojaah = [];
 
-        $rawGrafik = $this->hafalanModel->getGrafikAyatDuaGaris($id_santri, $periode);
+        // Sertakan parameter tenantId jika metode model kustom membutuhkannya
+        $rawGrafik = $this->hafalanModel->getGrafikAyatDuaGaris($id_santri, $periode, $this->tenantId);
 
         if (!empty($rawGrafik)) {
             foreach ($rawGrafik as $row) {
@@ -84,14 +94,14 @@ class Statistik extends BaseController
         $data['nama_santri'] = $nama_santri;
         $data['periode'] = $periode;
 
-        $data['total_juz'] = $this->hafalanModel->getTotalJuzSelesai($id_santri);
-        $data['streak'] = $this->hafalanModel->getStreakHarian($id_santri);
-        $data['rata_predikat'] = $this->hafalanModel->getRataPredikatSantri($id_santri, $periode);
-        $data['komposisi'] = $this->hafalanModel->getKomposisiSetoran($id_santri, $periode);
+        $data['total_juz'] = $this->hafalanModel->getTotalJuzSelesai($id_santri, $this->tenantId);
+        $data['streak'] = $this->hafalanModel->getStreakHarian($id_santri, $this->tenantId);
+        $data['rata_predikat'] = $this->hafalanModel->getRataPredikatSantri($id_santri, $periode, $this->tenantId);
+        $data['komposisi'] = $this->hafalanModel->getKomposisiSetoran($id_santri, $periode, $this->tenantId);
         $data['chart_labels'] = $chartLabels;
         $data['chart_ziyadah'] = $chartZiyadah;
         $data['chart_murojaah'] = $chartMurojaah;
-        $data['detail_juz'] = $this->hafalanModel->getDetailCapaianJuz($id_santri, $periode);
+        $data['detail_juz'] = $this->hafalanModel->getDetailCapaianJuz($id_santri, $periode, $this->tenantId);
 
         return view('wali/statistik_hafalan', $data);
     }

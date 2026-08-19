@@ -12,6 +12,7 @@ class RiwayatHafalan extends BaseController
     protected $hafalanModel;
     protected $santriModel;
     protected $guruModel;
+    protected $tenantId;
 
     public function __construct()
     {
@@ -23,15 +24,19 @@ class RiwayatHafalan extends BaseController
             header('Location: ' . base_url('login'));
             exit();
         }
+
+        // Ambil tenant_id dari session aktif
+        $this->tenantId = session()->get('tenant_id');
     }
 
     public function index()
     {
         $idWali = session()->get('ref_id') ?? session()->get('id');
 
-        // Ambil semua anak wali beserta nama kelasnya
+        // Ambil semua anak wali berdasarkan tenant_id dan id_wali
         $santriList = $this->santriModel->select('santri.*, kelas.nama_kelas')
             ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
+            ->where('santri.tenant_id', $this->tenantId)
             ->where('santri.id_wali', $idWali)
             ->findAll();
 
@@ -52,17 +57,19 @@ class RiwayatHafalan extends BaseController
         ];
 
         if (!empty($idSantriDipilih)) {
-            // Ambil detail santri aktif beserta data guru pengajarnya via join tabel guru
+            // Ambil detail santri aktif dengan validasi tenant_id
             $santriAktif = $this->santriModel->select('santri.*, kelas.nama_kelas, guru.nama_guru, guru.no_hp as no_hp_guru')
                 ->join('kelas', 'kelas.id = santri.id_kelas', 'left')
-                ->join('guru', 'guru.id_kelas_diampu = santri.id_kelas', 'left')
+                ->join('guru', 'guru.id_kelas_diampu = santri.id_kelas AND guru.tenant_id = santri.tenant_id', 'left')
+                ->where('santri.tenant_id', $this->tenantId)
                 ->where('santri.id', $idSantriDipilih)
+                ->where('santri.id_wali', $idWali)
                 ->first();
 
             if ($santriAktif) {
-                // Ambil data riwayat dan ringkasan dengan filter periode
-                $riwayat = $this->hafalanModel->getRiwayatBySantri($idSantriDipilih, $periode);
-                $statistik = $this->hafalanModel->getStatistikRingkasBySantri($idSantriDipilih, $periode);
+                // Sertakan parameter tenantId pada metode kustom model
+                $riwayat = $this->hafalanModel->getRiwayatBySantri($idSantriDipilih, $periode, $this->tenantId);
+                $statistik = $this->hafalanModel->getStatistikRingkasBySantri($idSantriDipilih, $periode, $this->tenantId);
             }
         }
 
