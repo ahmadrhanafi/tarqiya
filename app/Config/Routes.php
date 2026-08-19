@@ -15,6 +15,22 @@ $routes->get('kelas', 'KelasController::index');
 
 $routes->get('dashboard', 'Dashboard::index', ['filter' => 'auth']);
 
+// Route khusus Super Admin SaaS Pusat
+$routes->group('superadmin', ['filter' => 'auth'], function ($routes) {
+    $routes->get('dashboard', 'SuperAdmin\Dashboard::index');
+    $routes->get('tenants', 'SuperAdmin\Tenant::index');
+    $routes->post('tenants/store', 'SuperAdmin\Tenant::store');
+    $routes->post('tenants/update/(:num)', 'SuperAdmin\Tenant::update/$1');
+    $routes->get('tenants/delete/(:num)', 'SuperAdmin\Tenant::delete/$1');
+
+    // Manajemen Paket Langganan SaaS
+    $routes->get('packages', 'SuperAdmin\Package::index');
+    $routes->post('packages/store', 'SuperAdmin\Package::store');
+    $routes->post('packages/update/(:num)', 'SuperAdmin\Package::update/$1');
+
+    $routes->get('settings', 'SuperAdmin\Settings::index');
+});
+
 // Grouping agar akses lebih aman
 $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->get('dashboard', 'Admin\Dashboard::index');

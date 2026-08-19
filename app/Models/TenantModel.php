@@ -4,15 +4,23 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class UserModel extends Model
+class TenantModel extends Model
 {
-    protected $table = 'users';
+    protected $table = 'tenants';
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
     protected $returnType = 'array';
 
-    // Sesuaikan dengan kolom migration
-    protected $allowedFields = ['tenant_id', 'foto', 'name', 'username', 'password', 'role', 'ref_id'];
+    // Kolom yang diizinkan untuk diisi/diubah
+    protected $allowedFields = [
+        'nama_lembaga',
+        'slug',
+        'domain_custom',
+        'alamat',
+        'no_telp',
+        'logo',
+        'status_tenant'
+    ];
 
     // Dates
     protected $useTimestamps = true;

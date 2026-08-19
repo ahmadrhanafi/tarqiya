@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hudfal Information | Web Monitoring Hafalan Santri</title>
-    <link rel="shortcut icon" href="<?= base_url('logo_hudfal.png') ?>" type="image/png">
+    <title>Tarqiya | Web App Monitoring Hafalan Qur'an</title>
+    <link rel="shortcut icon" href="<?= base_url('assets/img/mainicon.png') ?>" type="image/png">
 
     <style>
         body {
@@ -47,16 +47,20 @@
     <script>
         const userRole = "<?= session()->get('role') ?>";
 
+        // Default target jika admin tenant
         let targetUrl = "<?= base_url('admin/dashboard') ?>";
 
-        if (userRole === 'guru') {
+        // Periksa role lainnya secara spesifik
+        if (userRole === 'superadmin') {
+            targetUrl = "<?= base_url('superadmin/dashboard') ?>";
+        } else if (userRole === 'guru') {
             targetUrl = "<?= base_url('guru/dashboard') ?>";
         } else if (userRole === 'wali') {
             targetUrl = "<?= base_url('wali/dashboard') ?>";
         }
 
         // Redirect otomatis ke dashboard setelah 2.5 detik sesuai role
-        setTimeout(function() {
+        setTimeout(function () {
             window.location.href = targetUrl;
         }, 2500);
     </script>

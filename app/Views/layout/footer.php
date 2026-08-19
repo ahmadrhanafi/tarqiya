@@ -4,10 +4,10 @@
         <!-- Hak Cipta & Brand -->
         <div class="d-flex align-items-center gap-2 text-secondary small">
             <span class="fw-semibold text-dark-mode">&copy;
-                <?= date('Y'); ?> Sistem Monitoring Hafalan
+                <?= date('Y'); ?> Tarqiya Apps
             </span>
             <span class="d-none d-sm-inline text-secondary">|</span>
-            <span class="d-none d-sm-inline text-secondary">Pondok Pesantren Hudatul Falah</span>
+            <span class="d-none d-sm-inline text-secondary">Platform Qur'an Insight via Analytics Monitoring</span>
         </div>
 
         <!-- Status Server / Sistem & Versi -->

@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hudfal Information | <?= $title ?? 'Dashboard' ?></title>
-    <link rel="shortcut icon" href="<?= base_url('mainicon.png') ?>" type="image/png">
+    <title>Tarqiya Apps | <?= $title ?? 'Dashboard' ?></title>
+    <link rel="shortcut icon" href="<?= base_url('assets/img/mainicon.png') ?>" type="image/png">
 
     <!-- Bootstrap 5.3 & FontAwesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -25,9 +25,14 @@
 
     <style>
         :root {
-            --sidebar-bg: #0b1917;
+            --sidebar-bg: #002127;
             --main-bg: #f4f7f6;
-            --accent-green: #8BAE66;
+            --emerald-green: #50C878;
+            --dark-emerald: #097969;
+            --teal-secondary: #008080;
+            --deep-teal: #005F73;
+            --off-white: #F8F9FA;
+            --light-gray: #E9ECEF;
             --dark-card: #ffffff;
         }
 
@@ -179,25 +184,25 @@
             margin-right: 12px;
             /* Jarak pas antara ikon dan teks */
             transition: transform 0.2s ease, color 0.2s ease;
-            color: #8BAE66;
+            color: var(--emerald-green);
             /* Memberikan warna aksen hijau khas pada ikon */
         }
 
         .nav-link:hover {
-            background: rgba(139, 174, 102, 0.1);
-            color: var(--accent-green) !important;
+            background: rgba(10, 233, 203, 0.34);
+            color: var(--emerald-green) !important;
         }
 
         .nav-link:hover i {
             transform: scale(1.15) translateX(2px);
             /* Efek membesar sedikit saat di-hover */
-            color: #ffffff;
+            color: var(--emerald-green);
         }
 
         .nav-link.active {
-            background: var(--accent-green);
+            background: var(--emerald-green);
             color: #ffffff !important;
-            box-shadow: 0 4px 12px rgba(139, 174, 102, 0.3);
+            box-shadow: 0 4px 12px rgba(10, 233, 203, 0.34);
         }
 
         /* Ikon pada menu yang sedang aktif otomatis berubah jadi putih */
@@ -208,7 +213,7 @@
         .custom-divider {
             width: 75%;
             height: 2px;
-            background: rgba(139, 174, 102, 0.3);
+            background: rgba(10, 233, 203, 0.34);
             margin: 12px auto;
             border-radius: 2px;
         }

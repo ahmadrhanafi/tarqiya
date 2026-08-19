@@ -30,51 +30,46 @@ abstract class BaseController extends Controller
     // protected $session;
     protected $request;
     protected $helpers = [];
+    protected $tenantId;
 
     /**
      * @return void
      */
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
-        // Load here all helpers you want to be available in your controllers that extend BaseController.
-        // Caution: Do not put the this below the parent::initController() call below.
-        // $this->helpers = ['form', 'url'];
-
-        // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
 
-        // Preload any models, libraries, etc, here.
-        // $this->session = service('session');
         $uri = service('uri');
-        $segment = $uri->getSegment(1); // Contoh: admin, guru, wali, login, auth, dll
+        $segment = $uri->getSegment(1);
 
-        // 1. DAFTARKAN KECUALIAN (Whitelist)
-        // Jika sedang mengakses halaman login, proses login, logout, atau loading, lewati pengecekan!
-        $allowedRoutes = ['', 'home', 'login', 'auth', 'logout', 'loading'];
+        // 1. Whitelist Route Publik
+        $allowedRoutes = ['', 'home', 'login', 'auth', 'logout', 'loading', 'unauthorized'];
         if (in_array($segment, $allowedRoutes)) {
-            return; // Keluar dari initController, biarkan halaman publik diakses bebas
+            return;
         }
 
-        // 2. Cek autentikasi umum untuk halaman selain di atas
+        // 2. Cek Autentikasi
         if (!session()->get('logged_in')) {
             header('Location: ' . base_url('login'));
             exit();
         }
 
-        // 3. Validasi kecocokan role dengan URL segment
-        $roleSession = session()->get('role'); // misal: 'admin', 'guru', 'wali'
+        // Ambil tenant_id dari session
+        $this->tenantId = session()->get('tenant_id');
+        $roleSession = session()->get('role');
 
+        // 3. Validasi Role & Akses Superadmin vs Tenant
+        if ($segment === 'superadmin' && $roleSession !== 'superadmin') {
+            return redirect()->to('unauthorized');
+        }
         if ($segment === 'admin' && $roleSession !== 'admin') {
-            header('Location: ' . base_url('unauthorized'));
-            exit();
+            return redirect()->to('unauthorized');
         }
         if ($segment === 'guru' && $roleSession !== 'guru') {
-            header('Location: ' . base_url('unauthorized'));
-            exit();
+            return redirect()->to('unauthorized');
         }
         if ($segment === 'wali' && $roleSession !== 'wali') {
-            header('Location: ' . base_url('unauthorized'));
-            exit();
+            return redirect()->to('unauthorized');
         }
     }
 }

@@ -1,12 +1,12 @@
 <aside class="sidebar d-flex flex-column transition-base" id="mainSidebar">
     <!-- Logo & Brand Header -->
     <div class="d-flex align-items-center gap-3 px-4 pt-4 pb-3">
-        <img src="<?= base_url('logo_hudfal.png') ?>" alt="Logo Hudfal" style="width: 40px; height: auto;">
+        <img src="<?= base_url('assets/img/mainicon.png') ?>" alt="Tarqiya" style="width: 50px; height: auto;">
         <div>
-            <h5 class="m-0 fw-bold tracking-wide text-white" style="font-size: 1.4rem; letter-spacing: 0.5px;">HUDFAL
+            <h5 class="m-0 fw-bold tracking-wide text-white" style="font-size: 1.4rem; letter-spacing: 0.5px;">TARQIYA
             </h5>
-            <small
-                style="font-size: 0.7rem; font-weight: 700; color: #8BAE66; letter-spacing: 1.5px;">INFORMATION</small>
+            <small style="font-size: 0.7rem; font-weight: 700; color: #097969; letter-spacing: 1.5px;">Tahfidz
+                Analytics</small>
         </div>
     </div>
 
@@ -22,16 +22,38 @@
 
         <!-- Link Dashboard Umum -->
         <div class="text-uppercase small px-3 mt-3 mb-1 text-sidebar-label"
-            style="font-size: 0.65rem; color: #8BAE66; letter-spacing: 1px;">Overview</div>
+            style="font-size: 0.65rem; color: rgba(10, 233, 203, 0.34); letter-spacing: 1px;">Overview</div>
         <a href="<?= $dashboardUrl ?>"
             class="nav-link px-3 py-2 rounded-3 mb-1 <?= (current_url() == $dashboardUrl) ? 'active' : '' ?>">
             <i class="fa-solid fa-gauge-high fa-fw me-2"></i> <span>Dashboard</span>
         </a>
 
+        <!-- MENU KHUSUS SUPERADMIN (PUSAT) -->
+        <?php if ($role === 'superadmin'): ?>
+            <div class="text-uppercase small px-3 mt-3 mb-1 text-sidebar-label"
+                style="font-size: 0.65rem; color: rgba(10, 233, 203, 0.34); letter-spacing: 1px;">Menu Pusat</div>
+            <a href="<?= base_url('superadmin/tenants') ?>"
+                class="nav-link px-3 py-2 rounded-3 mb-1 <?= (url_is('superadmin/tenants*')) ? 'active' : '' ?>">
+                <i class="fa-solid fa-school fa-fw me-2"></i> <span>Data Tenants</span>
+            </a>
+            <a href="<?= base_url('superadmin/users') ?>"
+                class="nav-link px-3 py-2 rounded-3 mb-1 <?= (url_is('superadmin/users*')) ? 'active' : '' ?>">
+                <i class="fa-solid fa-users-gear fa-fw me-2"></i> <span>Kelola Pengguna</span>
+            </a>
+            <a href="<?= base_url('superadmin/subscription') ?>"
+                class="nav-link px-3 py-2 rounded-3 mb-1 <?= (url_is('superadmin/subscription*')) ? 'active' : '' ?>">
+                <i class="fa-solid fa-file-invoice-dollar fa-fw me-2"></i> <span>Langganan & Tagihan</span>
+            </a>
+            <a href="<?= base_url('superadmin/settings') ?>"
+                class="nav-link px-3 py-2 rounded-3 mb-1 <?= (url_is('superadmin/settings*')) ? 'active' : '' ?>">
+                <i class="fa-solid fa-gears fa-fw me-2"></i> <span>Pengaturan</span>
+            </a>
+        <?php endif; ?>
+
         <!-- MENU KHUSUS ADMIN -->
         <?php if ($role === 'admin'): ?>
             <div class="text-uppercase small px-3 mt-3 mb-1 text-sidebar-label"
-                style="font-size: 0.65rem; color: #8BAE66; letter-spacing: 1px;">Menu Admin</div>
+                style="font-size: 0.65rem; color: rgba(10, 233, 203, 0.34); letter-spacing: 1px;">Menu Admin</div>
             <a href="<?= base_url('admin/kelas') ?>"
                 class="nav-link px-3 py-2 rounded-3 mb-1 <?= (url_is('admin/kelas*')) ? 'active' : '' ?>">
                 <i class="fa-solid fa-school fa-fw me-2"></i> <span>Data Kelas</span>
@@ -68,7 +90,7 @@
         <!-- MENU KHUSUS GURU/PENGAJAR -->
         <?php if ($role === 'guru'): ?>
             <div class="text-uppercase small px-3 mt-3 mb-1 text-sidebar-label"
-                style="font-size: 0.65rem; color: #8BAE66; letter-spacing: 1px;">Menu Pengajar</div>
+                style="font-size: 0.65rem; color: rgba(10, 233, 203, 0.34); letter-spacing: 1px;">Menu Pengajar</div>
             <a href="<?= base_url('guru/santri') ?>"
                 class="nav-link px-3 py-2 rounded-3 mb-1 <?= (url_is('guru/santri*')) ? 'active' : '' ?>">
                 <i class="fa-solid fa-people-group fa-fw me-2"></i> <span>Data Santri</span>
@@ -90,7 +112,7 @@
         <!-- MENU KHUSUS WALI SANTRI -->
         <?php if ($role === 'wali'): ?>
             <div class="text-uppercase small px-3 mt-3 mb-1 text-sidebar-label"
-                style="font-size: 0.65rem; color: #8BAE66; letter-spacing: 1px;">Menu Wali</div>
+                style="font-size: 0.65rem; color: rgba(10, 233, 203, 0.34); letter-spacing: 1px;">Menu Wali</div>
             <a href="<?= base_url('wali/statistik-hafalan') ?>"
                 class="nav-link px-3 py-2 rounded-3 mb-1 <?= (url_is('wali/statistik-hafalan*')) ? 'active' : '' ?>">
                 <i class="fa-solid fa-chart-bar fa-fw me-2"></i> <span>Statistik Hafalan</span>

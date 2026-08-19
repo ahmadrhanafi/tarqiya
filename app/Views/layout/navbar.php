@@ -47,7 +47,17 @@
                         <?php else: ?>
                             <span class="text-dark-mode small d-block"
                                 style="font-size: 10px; margin-top: 17px !important;">
-                                <?= ucfirst(session()->get('role') ?? 'Anonymous') ?>
+                                <?php
+                                $roleLabel = session()->get('role');
+                                if ($roleLabel === 'superadmin')
+                                    echo 'Super Admin Pusat';
+                                elseif ($roleLabel === 'admin')
+                                    echo 'Admin Pesantren';
+                                elseif ($roleLabel === 'wali')
+                                    echo 'Wali Santri';
+                                else
+                                    echo ucfirst($roleLabel ?? 'Anonymous');
+                                ?>
                             </span>
                         <?php endif; ?>
                     </div>
@@ -73,16 +83,26 @@
                     <li class="px-3 py-2 d-sm-none mb-2">
                         <div class="fw-bold text-dark-mode"><?= session()->get('name') ?></div>
                         <small class="text-secondary">
-                            <?= session()->get('role') == 'guru' ? 'Pengampu: ' . session()->get('nama_kelas') : (session()->get('role') == 'wali' ? 'Wali Santri' : 'Admin') ?>
+                            <?php
+                            $r = session()->get('role');
+                            if ($r === 'guru')
+                                echo 'Pengampu: ' . session()->get('nama_kelas');
+                            elseif ($r === 'wali')
+                                echo 'Wali Santri';
+                            elseif ($r === 'superadmin')
+                                echo 'Super Admin Pusat';
+                            else
+                                echo 'Admin Pesantren';
+                            ?>
                         </small>
                     </li>
                     <li>
                         <hr class="dropdown-divider border border-secondary border-opacity-25">
                     </li>
                     <li>
-                        <?php if ($role === 'admin'): ?>
+                        <?php if ($role === 'admin' || $role === 'superadmin'): ?>
                             <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center gap-2 text-dark hover-bg-light transition-base"
-                                href="<?= base_url('admin/profile') ?>">
+                                href="<?= base_url($role . '/profile') ?>">
                                 <i class="fa-solid fa-user text-success"></i> <span class="small fw-medium">Profile
                                     Saya</span>
                             </a>
@@ -101,9 +121,9 @@
                         <?php endif; ?>
                     </li>
                     <li>
-                        <?php if ($role === 'admin'): ?>
+                        <?php if ($role === 'admin' || $role === 'superadmin'): ?>
                             <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center gap-2 text-dark hover-bg-light transition-base"
-                                href="<?= base_url('admin/pengaturan') ?>">
+                                href="<?= base_url($role . '/pengaturan') ?>">
                                 <i class="fa-solid fa-gear text-secondary"></i> <span
                                     class="small fw-medium">Pengaturan</span>
                             </a>
@@ -148,25 +168,21 @@
 
 <script>
     $(document).ready(function () {
-        // Buat elemen backdrop secara otomatis jika belum ada di HTML
         if ($('.sidebar-backdrop').length === 0) {
             $('body').append('<div class="sidebar-backdrop"></div>');
         }
 
-        // Ketika tombol burger menu diklik
         $('#sidebarToggle').on('click', function (e) {
             e.stopPropagation();
             $('#mainSidebar').toggleClass('active');
             $('.sidebar-backdrop').toggleClass('active');
         });
 
-        // Ketika area gelap (backdrop) di luar sidebar diklik, tutup sidebar
         $('.sidebar-backdrop').on('click', function () {
             $('#mainSidebar').removeClass('active');
             $('.sidebar-backdrop').removeClass('active');
         });
 
-        // Opsional: Tutup sidebar otomatis ketika salah satu menu di dalam sidebar diklik (khusus mobile)
         $('#mainSidebar .nav-link').on('click', function () {
             if (window.innerWidth <= 992) {
                 $('#mainSidebar').removeClass('active');
@@ -175,20 +191,17 @@
         });
     });
 
-    // toggle dark mode
     document.addEventListener("DOMContentLoaded", function () {
         const toggleBtn = document.getElementById('darkModeToggle');
         const darkModeIcon = document.getElementById('darkModeIcon');
         const body = document.body;
 
-        // Cek localStorage apakah sebelumnya sudah aktif mode gelap
         if (localStorage.getItem('theme') === 'dark') {
             body.classList.add('dark-mode');
             darkModeIcon.classList.remove('fa-moon', 'text-secondary');
             darkModeIcon.classList.add('fa-sun', 'text-warning');
         }
 
-        // Event listener saat tombol dark mode diklik
         toggleBtn.addEventListener('click', function () {
             body.classList.toggle('dark-mode');
 

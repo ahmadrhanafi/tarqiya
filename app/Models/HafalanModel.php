@@ -13,6 +13,7 @@ class HafalanModel extends Model
 
     // Sesuaikan dengan kolom yang ada di database migration
     protected $allowedFields = [
+        'tenant_id',
         'id_santri',
         'id_guru',
         'jenis',

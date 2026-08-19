@@ -13,6 +13,7 @@ class PembayaranModel extends Model
     protected $useTimestamps = true;
 
     protected $allowedFields = [
+        'tenant_id',
         'id_santri',
         'tanggal',
         'jenis_pembayaran',

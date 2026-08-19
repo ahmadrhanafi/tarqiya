@@ -18,8 +18,9 @@ class Auth extends BaseController
         if (session()->get('logged_in')) {
             $role = session()->get('role');
 
-            // Arahkan kembali ke halaman dashboard masing-masing role
-            if ($role === 'admin') {
+            if ($role === 'superadmin') {
+                return redirect()->to(base_url('superadmin/dashboard'));
+            } elseif ($role === 'admin') {
                 return redirect()->to(base_url('admin/dashboard'));
             } elseif ($role === 'guru') {
                 return redirect()->to(base_url('guru/dashboard'));
@@ -75,11 +76,13 @@ class Auth extends BaseController
                 }
             }
 
+            // SIMPAN DATA KE SESSION
             $session->set([
                 'id' => $data['id'],
+                'tenant_id' => $data['tenant_id'],
                 'role' => $data['role'],
                 'name' => $data['name'],
-                'nama_wali' => $namaWali ? $namaWali : $data['name'], // Simpan nama wali
+                'nama_wali' => $namaWali ? $namaWali : $data['name'],
                 'foto' => !empty($data['foto']) ? $data['foto'] : 'default.png',
                 'ref_id' => $data['ref_id'],
                 'id_kelas' => $idKelas,
