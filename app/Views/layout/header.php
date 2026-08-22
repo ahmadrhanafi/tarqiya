@@ -128,42 +128,6 @@
 
         /* Styling Dasar Nav Link di Sidebar */
         #mainSidebar .nav-link {
-            color: rgba(255, 255, 255, 0.75);
-            transition: all 0.2s ease-in-out;
-            font-size: 0.9rem;
-        }
-
-        #mainSidebar .nav-link:hover {
-            color: #ffffff;
-            background-color: rgba(255, 255, 255, 0.08);
-            transform: translateX(3px);
-        }
-
-        #mainSidebar .nav-link.active {
-            color: #ffffff !important;
-            background-color: #198754 !important;
-            /* Warna aksen hijau utama */
-            font-weight: 600;
-            box-shadow: 0 4px 10px rgba(25, 135, 84, 0.3);
-        }
-
-        .hover-danger-bg:hover {
-            background-color: rgba(220, 53, 69, 0.15) !important;
-            color: #ff6b6b !important;
-        }
-
-        .custom-divider {
-            height: 1px;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Sinkronisasi saat Dark Mode Global Aktif */
-        body.dark-mode #mainSidebar {
-            background-color: #080808 !important;
-            border-right: 1px solid #2c2c2c;
-        }
-
-        .nav-link {
             color: #94a3b8 !important;
             padding: 12px 18px;
             font-size: 0.9rem;
@@ -175,39 +139,41 @@
             transition: all 0.2s ease;
         }
 
-        /* --- Pengaturan Ikon FontAwesome agar Lebih Mantap --- */
+        #mainSidebar .nav-link:hover {
+            background: rgba(10, 233, 203, 0.34);
+            color: var(--emerald-green) !important;
+            transform: translateX(3px);
+        }
+
+        #mainSidebar .nav-link.active {
+            background: var(--emerald-green);
+            color: #ffffff !important;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(10, 233, 203, 0.34);
+        }
+
+        /* --- Pengaturan Ikon FontAwesome --- */
         .nav-link i {
             font-size: 1.1rem;
             width: 28px;
-            /* Memberikan ruang tetap agar teks menu sejajar rapi */
             text-align: center;
             margin-right: 12px;
-            /* Jarak pas antara ikon dan teks */
             transition: transform 0.2s ease, color 0.2s ease;
             color: var(--emerald-green);
-            /* Memberikan warna aksen hijau khas pada ikon */
-        }
-
-        .nav-link:hover {
-            background: rgba(10, 233, 203, 0.34);
-            color: var(--emerald-green) !important;
         }
 
         .nav-link:hover i {
             transform: scale(1.15) translateX(2px);
-            /* Efek membesar sedikit saat di-hover */
             color: var(--emerald-green);
         }
 
-        .nav-link.active {
-            background: var(--emerald-green);
-            color: #ffffff !important;
-            box-shadow: 0 4px 12px rgba(10, 233, 203, 0.34);
-        }
-
-        /* Ikon pada menu yang sedang aktif otomatis berubah jadi putih */
         .nav-link.active i {
             color: #ffffff !important;
+        }
+
+        .hover-danger-bg:hover {
+            background-color: rgba(220, 53, 69, 0.15) !important;
+            color: #ff6b6b !important;
         }
 
         .custom-divider {
@@ -216,6 +182,93 @@
             background: rgba(10, 233, 203, 0.34);
             margin: 12px auto;
             border-radius: 2px;
+        }
+
+        /* Sinkronisasi saat Dark Mode Global Aktif */
+        body.dark-mode #mainSidebar {
+            background-color: #080808 !important;
+            border-right: 1px solid #2c2c2c;
+        }
+
+
+        /* ========================================================
+   TAMBAHAN KODE UNTUK FITUR SIDEBAR BUKA-TUTUP (COLLAPSED)
+   ======================================================== */
+
+        /* --- Penyesuaian Saat Sidebar Ditutup (Collapsed) --- */
+        #mainSidebar.collapsed {
+            width: 80px !important;
+            min-width: 80px !important;
+            max-width: 80px !important;
+        }
+
+        /* Sembunyikan tulisan brand & label kategori */
+        #mainSidebar.collapsed .sidebar-text,
+        #mainSidebar.collapsed .text-sidebar-label {
+            display: none !important;
+        }
+
+        /* --- Penyesuaian Header & Menu Saat Sidebar Ditutup (Collapsed) --- */
+        #mainSidebar.collapsed {
+            width: 80px !important;
+            min-width: 80px !important;
+            max-width: 80px !important;
+        }
+
+        /* Sembunyikan teks nama brand & label */
+        #mainSidebar.collapsed .sidebar-text,
+        #mainSidebar.collapsed .text-sidebar-label {
+            display: none !important;
+        }
+
+        /* Rata tengah header box saat ditutup (Logo di atas, Tombol Toggle di bawahnya) */
+        #mainSidebar.collapsed .sidebar-header-box {
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            gap: 12px;
+        }
+
+        #mainSidebar.collapsed .sidebar-brand-wrapper {
+            justify-content: center !important;
+            width: 100%;
+        }
+
+        /* Tombol toggle diposisikan di tengah bawah logo saat sidebar ditutup */
+        #mainSidebar.collapsed #sidebarToggle {
+            margin: 0 auto !important;
+            display: block !important;
+            float: none !important;
+        }
+
+        #mainSidebar.collapsed #sidebarToggle i {
+            font-size: 1.2rem;
+        }
+
+        /* Pusatkan semua ikon menu navigasi di bawahnya */
+        #mainSidebar.collapsed .nav-link {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            margin: 4px 10px !important;
+        }
+
+        #mainSidebar.collapsed .nav-link i {
+            margin-right: 0 !important;
+            width: auto !important;
+        }
+
+        /* Penyesuaian flex utilities bawaan bootstrap di header */
+        #mainSidebar.collapsed .d-flex.align-items-center.justify-between {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        #mainSidebar.collapsed .d-flex.align-items-center.gap-3 {
+            gap: 0 !important;
         }
 
         /* --- Navbar Atas (Header) --- */
@@ -245,8 +298,16 @@
 
         /* --- Main Content Area --- */
         main {
-            padding: 28px;
-            min-height: calc(100vh - 70px);
+            margin-left: 290px !important;
+            margin-top: 25px !important;
+            margin-bottom: 25px !important;
+            margin-right: 20px !important;
+            transition: margin-left 0.3s ease-in-out !important;
+        }
+
+        body.sidebar-collapsed main {
+            margin-left: 100px !important;
+            margin-right: 20px !important;
         }
 
         /* --- Penyesuaian Dark Mode untuk Tabel & Card --- */
@@ -285,53 +346,6 @@
         body.dark-mode .table-hover tbody tr:hover td {
             background-color: #252525 !important;
             color: #ffffff !important;
-        }
-
-        /* --- Styling Footer Dashboard Profesional --- */
-        .footer-dashboard {
-            background-color: #ffffff;
-            border-color: #e2e8f0 !important;
-            font-size: 0.85rem;
-        }
-
-        /* Sinkronisasi Footer dengan Dark Mode Global */
-        body.dark-mode .footer-dashboard {
-            background-color: #080808 !important;
-            border-color: #2c2c2c !important;
-        }
-
-        /* Efek Animasi Titik Hijau Status Server */
-        @keyframes custom-ping {
-            0% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
-
-            70% {
-                transform: scale(2.2);
-                opacity: 0;
-            }
-
-            100% {
-                transform: scale(2.2);
-                opacity: 0;
-            }
-        }
-
-        .animate-ping {
-            animation: custom-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-
-        /* Responsive Mobile Handling */
-        @media (max-width: 992px) {
-            .sidebar {
-                position: fixed;
-                left: -270px;
-            }
-
-            .sidebar.active {
-                left: 0;
-            }
         }
 
         /* ============================================ */
@@ -420,16 +434,122 @@
             text-overflow: ellipsis;
         }
 
+        /* --- Styling Footer Dashboard Profesional --- */
+        .footer-dashboard {
+            background-color: #ffffff;
+            border-color: #e2e8f0 !important;
+            font-size: 0.85rem;
+        }
+
+        /* Sinkronisasi Footer dengan Dark Mode Global */
+        body.dark-mode .footer-dashboard {
+            background-color: #080808 !important;
+            border-color: #2c2c2c !important;
+        }
+
+        /* Efek Animasi Titik Hijau Status Server */
+        @keyframes custom-ping {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            70% {
+                transform: scale(2.2);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(2.2);
+                opacity: 0;
+            }
+        }
+
+        .animate-ping {
+            animation: custom-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        /* --- Penyesuaian Navbar Utama berdasarkan ID #mainNavbar --- */
+        #mainNavbar {
+            margin-left: 270px !important;
+            width: calc(100% - 270px) !important;
+            transition: all 0.3s ease-in-out !important;
+        }
+
+        /* Ketika sidebar ditutup (collapsed) */
+        body.sidebar-collapsed #mainNavbar {
+            margin-left: 80px !important;
+            width: calc(100% - 80px) !important;
+        }
+
+        /* --- Pengaturan Khusus Tampilan Mobile (Max Width 992px) --- */
+        @media (max-width: 992px) {
+
+            /* Paksa navbar dan main content memenuhi layar penuh tanpa margin */
+            #mainNavbar,
+            main {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            /* Pastikan kondisi collapsed di mobile tetap tidak memberi margin */
+            body.sidebar-collapsed #mainNavbar,
+            body.sidebar-collapsed main {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+
+            /* Posisi awal sidebar tersembunyi di luar layar kiri */
+            .sidebar {
+                position: fixed !important;
+                top: 0;
+                left: -270px !important;
+                height: 100vh;
+                width: 270px !important;
+                min-width: 270px !important;
+                transition: left 0.3s ease-in-out;
+                z-index: 1060 !important;
+            }
+
+            /* Saat sidebar aktif/dibuka di mobile */
+            .sidebar.active {
+                left: 0 !important;
+            }
+
+            /* Backdrop / Lapisan hitam transparan di belakang sidebar saat aktif di mobile */
+            .sidebar-backdrop {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(2px);
+                z-index: 1040;
+            }
+
+            .sidebar-backdrop.active {
+                display: block;
+            }
+        }
+
+        /* Secara default sembunyikan di desktop */
+        .mobile-menu-btn {
+            display: none !important;
+        }
+
         /* --- Pengaturan Responsive Mobile Sidebar --- */
         @media (max-width: 992px) {
             .sidebar {
                 position: fixed !important;
                 top: 0;
                 left: -270px !important;
+                width: 270px !important;
                 height: 100vh;
-                transition: left 0.3s ease-in-out;
-                z-index: 1060 !important;
-                /* Di atas elemen lain */
+                z-index: 1080 !important;
+                transition: left 0.3s ease-in-out !important;
             }
 
             .sidebar.active {
@@ -447,6 +567,10 @@
                 background-color: rgba(0, 0, 0, 0.5);
                 backdrop-filter: blur(2px);
                 z-index: 1040;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block !important;
             }
 
             .modal {

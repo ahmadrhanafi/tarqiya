@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-light shadow-sm px-4 py-2 border-bottom sticky-top transition-base"
+<nav class="navbar navbar-expand-lg navbar-light shadow-sm px-3 px-md-4 py-2 border-bottom sticky-top transition-base"
     id="mainNavbar" style="background-color: #097969;">
     <?php
     $role = session()->get('role');
@@ -7,10 +7,12 @@
     <div class="container-fluid d-flex justify-content-between align-items-center p-0">
         <!-- Brand / Title (Sisi Kiri) -->
         <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-link text-dark-mode p-0 d-lg-none" id="sidebarToggle" type="button"
-                style="margin-left: -10px;">
-                <i class="fa-solid fa-bars fa-lg" style="font-size: large; padding-top: 15px !important;"></i>
-            </button>
+            <!-- Tombol Bars Mobile -->
+            <a href="javascript:void(0);" id="sidebarToggle"
+                class="text-dark-mode p-2 text-decoration-none mobile-menu-btn"
+                style="z-index: 9999; position: relative; display: inline-block;">
+                <i class="fa-solid fa-bars fa-lg"></i>
+            </a>
 
             <div class="d-none d-md-flex align-items-center gap-2">
                 <div class="text-dark-mode p-2 rounded-3 d-flex align-items-center justify-content-center"
@@ -167,28 +169,33 @@
 </nav>
 
 <script>
-    $(document).ready(function () {
-        if ($('.sidebar-backdrop').length === 0) {
-            $('body').append('<div class="sidebar-backdrop"></div>');
+    document.addEventListener("DOMContentLoaded", function () {
+        // Cek dan buat backdrop jika belum ada
+        let backdrop = document.querySelector('.sidebar-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'sidebar-backdrop';
+            document.body.appendChild(backdrop);
         }
 
-        $('#sidebarToggle').on('click', function (e) {
-            e.stopPropagation();
-            $('#mainSidebar').toggleClass('active');
-            $('.sidebar-backdrop').toggleClass('active');
-        });
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mainSidebar = document.getElementById('mainSidebar');
 
-        $('.sidebar-backdrop').on('click', function () {
-            $('#mainSidebar').removeClass('active');
-            $('.sidebar-backdrop').removeClass('active');
-        });
+        if (sidebarToggle && mainSidebar) {
+            sidebarToggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                mainSidebar.classList.toggle('active');
+                backdrop.classList.toggle('active');
+            });
+        }
 
-        $('#mainSidebar .nav-link').on('click', function () {
-            if (window.innerWidth <= 992) {
-                $('#mainSidebar').removeClass('active');
-                $('.sidebar-backdrop').removeClass('active');
-            }
-        });
+        if (backdrop) {
+            backdrop.addEventListener('click', function () {
+                mainSidebar.classList.remove('active');
+                backdrop.classList.remove('active');
+            });
+        }
     });
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -202,18 +209,20 @@
             darkModeIcon.classList.add('fa-sun', 'text-warning');
         }
 
-        toggleBtn.addEventListener('click', function () {
-            body.classList.toggle('dark-mode');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function () {
+                body.classList.toggle('dark-mode');
 
-            if (body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-                darkModeIcon.classList.remove('fa-moon', 'text-secondary');
-                darkModeIcon.classList.add('fa-sun', 'text-warning');
-            } else {
-                localStorage.setItem('theme', 'light');
-                darkModeIcon.classList.remove('fa-sun', 'text-warning');
-                darkModeIcon.classList.add('fa-moon', 'text-secondary');
-            }
-        });
+                if (body.classList.contains('dark-mode')) {
+                    localStorage.setItem('theme', 'dark');
+                    darkModeIcon.classList.remove('fa-moon', 'text-secondary');
+                    darkModeIcon.classList.add('fa-sun', 'text-warning');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                    darkModeIcon.classList.remove('fa-sun', 'text-warning');
+                    darkModeIcon.classList.add('fa-moon', 'text-secondary');
+                }
+            });
+        }
     });
 </script>
